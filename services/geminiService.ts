@@ -3,6 +3,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Policy, GapAnalysisResult, UserProfile, CoverageType, PaymentFrequency } from "../types";
 import { Language } from "../translations";
 
+/**
+ * Analyzes insurance coverage gaps using gemini-3-pro-preview for complex reasoning.
+ */
 export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfile, lang: Language): Promise<GapAnalysisResult> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
@@ -96,6 +99,9 @@ export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfi
   }
 };
 
+/**
+ * Expert tax planning using gemini-3-pro-preview for complex reasoning.
+ */
 export const analyzeTaxOptimization = async (policies: Policy[], profile: UserProfile, lang: Language): Promise<{
   advice: string[];
   suggestedProducts: string[];
@@ -163,6 +169,10 @@ export const analyzeTaxOptimization = async (policies: Policy[], profile: UserPr
   }
 };
 
+/**
+ * Extracting policy details from image/PDF documents.
+ * Uses gemini-3-flash-preview for general vision-to-text tasks.
+ */
 export const parsePolicyDocument = async (base64Data: string, mimeType: string): Promise<Partial<Policy> | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
@@ -181,7 +191,7 @@ export const parsePolicyDocument = async (base64Data: string, mimeType: string):
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-flash-preview',
       contents: {
         parts: [
           { inlineData: { data: base64Data.split(',')[1], mimeType: mimeType } },

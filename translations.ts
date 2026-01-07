@@ -1,4 +1,7 @@
 
+// Export Language type for use across the application
+export type Language = 'en' | 'th';
+
 export const translations = {
   en: {
     appName: "Policy Wallet",
@@ -128,7 +131,16 @@ export const translations = {
     userRole: "Role",
     makePro: "Make Pro",
     demoteMember: "Demote to Member",
-    adminOnly: "Admin Only Access"
+    adminOnly: "Admin Only Access",
+    cloudHub: "Cloud Deployment Hub",
+    deployTitle: "GCP Automation Center",
+    deployDesc: "Ready to go live? Copy the deployment scripts below to set up your production environment on Google Cloud.",
+    setupProject: "1. Setup Project",
+    setupDatabase: "2. Initialize Firestore",
+    setupStorage: "3. Create Storage Bucket",
+    deployApp: "4. Deploy to Cloud Run",
+    gcpTemplates: "GCP Solution Templates",
+    templateDesc: "Based on your dashboard, use these templates to build your app infra faster."
   },
   th: {
     appName: "Policy Wallet",
@@ -258,8 +270,15 @@ export const translations = {
     userRole: "ระดับสมาชิก",
     makePro: "เปลี่ยนเป็น Pro",
     demoteMember: "เปลี่ยนเป็น Member",
-    adminOnly: "เฉพาะผู้ดูแลระบบเท่านั้น"
+    adminOnly: "เฉพาะผู้ดูแลระบบเท่านั้น",
+    cloudHub: "ศูนย์รวมการติดตั้งคลาวด์",
+    deployTitle: "ระบบอัตโนมัติ Google Cloud",
+    deployDesc: "พร้อมออนไลน์หรือยัง? คัดลอกสคริปต์ด้านล่างเพื่อตั้งค่าระบบโปรดักชั่นของคุณบน Google Cloud ทันที",
+    setupProject: "1. ตั้งค่าโปรเจกต์",
+    setupDatabase: "2. เปิดใช้งาน Firestore",
+    setupStorage: "3. สร้างถังเก็บเอกสาร",
+    deployApp: "4. ติดตั้งบน Cloud Run",
+    gcpTemplates: "เทมเพลตโซลูชัน GCP",
+    templateDesc: "อ้างอิงจากหน้าแดชบอร์ดของคุณ ใช้เทมเพลตเหล่านี้เพื่อสร้างโครงสร้างพื้นฐานของแอปได้เร็วขึ้น"
   }
 };
-
-export type Language = 'en' | 'th';

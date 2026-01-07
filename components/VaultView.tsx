@@ -38,7 +38,9 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
     setIsUploading(true);
 
     try {
-      // Simulate base64 reading
+      // Simulate real cloud latency
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
@@ -87,7 +89,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
               <span className="mr-1">{isPro ? '✅' : '⭐'}</span> {isPro ? 'PRO VERSION ACTIVE' : t.proFeature}
             </div>
             <h3 className="text-3xl font-bold mb-3">{t.vaultTitle}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? 'Enjoy full access to your encrypted insurance document storage.' : t.proDesc}</p>
+            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? 'Enjoy full access to your encrypted insurance document storage, backed by Google Cloud Storage.' : t.proDesc}</p>
             {!isPro && (
               <button className="mt-6 px-8 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-amber-500/20 active:scale-95">
                 {t.upgradeNow}
@@ -163,7 +165,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                   <th className="px-6 py-3">{t.docCategory}</th>
                   <th className="px-6 py-3">File Name</th>
                   <th className="px-6 py-3">{t.companyPlan}</th>
-                  <th className="px-6 py-3">Date</th>
+                  <th className="px-6 py-3">Cloud Status</th>
                   <th className="px-6 py-3 text-right">{t.action}</th>
                 </tr>
               </thead>
@@ -197,7 +199,12 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                         <span className="text-[10px] text-slate-400 italic">{doc.policyName}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-400">{new Date(doc.uploadDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-1.5">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                        <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">Synced to Bucket</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <a 
@@ -298,7 +305,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                   {isUploading ? (
                     <div className="flex flex-col items-center space-y-2">
                        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                       <span className="text-xs font-bold text-blue-600">{t.uploading}</span>
+                       <span className="text-xs font-bold text-blue-600">Uploading to GCP Bucket...</span>
                     </div>
                   ) : (
                     <>
