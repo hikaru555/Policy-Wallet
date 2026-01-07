@@ -2,24 +2,28 @@
 import React, { useRef, useState } from 'react';
 import { translations, Language } from '../translations';
 import { Policy, PolicyDocument } from '../types';
+import ConfirmDialog from './ConfirmDialog';
 
 interface VaultViewProps {
   policies: Policy[];
   onUpload: (policyId: string, doc: PolicyDocument) => void;
   onDelete: (policyId: string, docId: string) => void;
   lang: Language;
+  isPro: boolean;
 }
 
-const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lang }) => {
+const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lang, isPro }) => {
   const t = translations[lang];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedPolicyId, setSelectedPolicyId] = useState<string>(policies[0]?.id || '');
+  const [selectedCategory, setSelectedCategory] = useState<'Policy' | 'Receipt' | 'Medical' | 'Other'>('Policy');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<{ policyId: string, docId: string, name: string } | null>(null);
 
   // Flatten all documents for listing
   const allDocs = policies.flatMap(p => 
-    (p.documents || []).map(d => ({ ...d, policyName: p.planName, policyId: p.id }))
+    (p.documents || []).map(d => ({ ...d, policyName: p.planName, company: p.company, policyId: p.id }))
   ).sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
 
   const policyDocs = allDocs.filter(d => d.category === 'Policy');
@@ -27,6 +31,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
   const medicalDocs = allDocs.filter(d => d.category === 'Medical');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isPro) return;
     const file = e.target.files?.[0];
     if (!file || !selectedPolicyId) return;
 
@@ -40,7 +45,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
         const newDoc: PolicyDocument = {
           id: Math.random().toString(36).substr(2, 9),
           name: file.name,
-          category: 'Policy',
+          category: selectedCategory,
           mimeType: file.type,
           url: base64,
           uploadDate: new Date().toISOString()
@@ -58,6 +63,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
   };
 
   const triggerUpload = () => {
+    if (!isPro) return;
     if (policies.length === 0) {
       alert(lang === 'en' ? "Please add a policy first" : "กรุณาเพิ่มกรมธรรม์ก่อน");
       return;
@@ -65,23 +71,32 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
     setShowUploadModal(true);
   };
 
+  const confirmDelete = () => {
+    if (docToDelete) {
+      onDelete(docToDelete.policyId, docToDelete.docId);
+      setDocToDelete(null);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${!isPro ? 'filter grayscale-[0.3]' : ''}`}>
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl border border-slate-700">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-xl">
-            <div className="inline-flex items-center px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 border border-amber-500/30">
-              <span className="mr-1">⭐</span> {t.proFeature}
+            <div className={`inline-flex items-center px-3 py-1 ${isPro ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'} rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 border`}>
+              <span className="mr-1">{isPro ? '✅' : '⭐'}</span> {isPro ? 'PRO VERSION ACTIVE' : t.proFeature}
             </div>
             <h3 className="text-3xl font-bold mb-3">{t.vaultTitle}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">{t.proDesc}</p>
-            <button className="mt-6 px-8 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-amber-500/20 active:scale-95">
-              {t.upgradeNow}
-            </button>
+            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? 'Enjoy full access to your encrypted insurance document storage.' : t.proDesc}</p>
+            {!isPro && (
+              <button className="mt-6 px-8 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-amber-500/20 active:scale-95">
+                {t.upgradeNow}
+              </button>
+            )}
           </div>
           <div className="hidden lg:block">
              <div className="w-32 h-32 bg-slate-700/50 rounded-3xl flex items-center justify-center text-6xl shadow-inner border border-slate-600/50">
-               🛡️
+               {isPro ? '🛡️' : '🔒'}
              </div>
           </div>
         </div>
@@ -95,9 +110,9 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
           { icon: '🧾', label: t.receiptDoc, count: receiptDocs.length, color: 'emerald' },
           { icon: '🏥', label: t.medicalDoc, count: medicalDocs.length, color: 'rose' }
         ].map((cat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group cursor-pointer opacity-100">
+          <div key={i} className={`bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-shadow group ${isPro ? 'hover:shadow-md cursor-pointer' : 'opacity-60 grayscale'}`}>
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}>
+              <div className={`w-12 h-12 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center text-xl ${isPro ? 'group-hover:scale-110 transition-transform' : ''}`}>
                 {cat.icon}
               </div>
               <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-lg">{cat.count} Files</span>
@@ -110,12 +125,23 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
+        {!isPro && (
+          <div className="absolute inset-0 z-20 bg-white/40 backdrop-blur-[2px] flex items-center justify-center">
+            <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 text-center max-w-xs">
+              <span className="text-4xl mb-3 block">🔒</span>
+              <p className="text-slate-800 font-bold mb-1">{t.proFeature}</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest leading-relaxed mb-4">{t.vaultAccess}</p>
+              <button className="w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all">{t.upgradeNow}</button>
+            </div>
+          </div>
+        )}
+
         <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center">
           <h4 className="font-bold text-slate-800">{t.vaultTitle}</h4>
           <button 
             onClick={triggerUpload}
-            className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center transition-colors"
+            className={`text-sm font-bold flex items-center transition-colors ${isPro ? 'text-blue-600 hover:text-blue-800' : 'text-slate-300'}`}
           >
             <span className="mr-1 text-lg">+</span> {t.uploadDoc}
           </button>
@@ -150,7 +176,9 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                         doc.category === 'Receipt' ? 'bg-emerald-100 text-emerald-700' :
                         'bg-slate-100 text-slate-700'
                       }`}>
-                        {doc.category}
+                        {doc.category === 'Policy' ? t.policyDoc : 
+                         doc.category === 'Receipt' ? t.receiptDoc : 
+                         doc.category === 'Medical' ? t.medicalDoc : doc.category}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -163,7 +191,12 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-500">{doc.policyName}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-700">{doc.company}</span>
+                        <span className="text-[10px] text-slate-400 italic">{doc.policyName}</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-xs text-slate-400">{new Date(doc.uploadDate).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
@@ -178,7 +211,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                           </svg>
                         </a>
                         <button 
-                          onClick={() => onDelete(doc.policyId, doc.id)}
+                          onClick={() => setDocToDelete({ policyId: doc.policyId, docId: doc.id, name: doc.name })}
                           className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
                           title={t.deleteFile}
                         >
@@ -205,6 +238,18 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
         accept="image/*,application/pdf"
       />
 
+      {/* Confirmation Dialog for Deletion */}
+      <ConfirmDialog 
+        isOpen={!!docToDelete}
+        title={lang === 'en' ? "Delete Document" : "ลบเอกสาร"}
+        message={lang === 'en' 
+          ? `Are you sure you want to delete "${docToDelete?.name}"? This action cannot be undone.` 
+          : `คุณแน่ใจหรือไม่ว่าต้องการลบ "${docToDelete?.name}"? การดำเนินการนี้ไม่สามารถย้อนกลับได้`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDocToDelete(null)}
+        lang={lang}
+      />
+
       {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -225,6 +270,21 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                     {policies.map(p => (
                       <option key={p.id} value={p.id}>{p.company} - {p.planName}</option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.docCategory}</label>
+                  <select 
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value as any)}
+                    disabled={isUploading}
+                  >
+                    <option value="Policy">{t.policyDoc}</option>
+                    <option value="Receipt">{t.receiptDoc}</option>
+                    <option value="Medical">{t.medicalDoc}</option>
+                    <option value="Other">{t.otherDoc}</option>
                   </select>
                 </div>
 

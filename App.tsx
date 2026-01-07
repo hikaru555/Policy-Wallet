@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument } from './types';
+import React, { useState, useEffect } from 'react';
+import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument, User, UserRole } from './types';
 import { translations, Language } from './translations';
 import Dashboard from './components/Dashboard';
 import PolicyList from './components/PolicyList';
@@ -13,6 +13,8 @@ import VaultView from './components/VaultView';
 import ConfirmDialog from './components/ConfirmDialog';
 import ShareReportModal from './components/ShareReportModal';
 import TaxOptimizationView from './components/TaxOptimizationView';
+import LoginView from './components/LoginView';
+import AdminConsole from './components/AdminConsole';
 
 const MOCK_POLICIES: Policy[] = [
   {
@@ -86,16 +88,37 @@ const AppLogo = () => (
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
+  const [user, setUser] = useState<User | null>(null);
+  
   const t = translations[lang];
 
   const [policies, setPolicies] = useState<Policy[]>(MOCK_POLICIES);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
-  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile' | 'admin'>('overview');
   const [isAddingPolicy, setIsAddingPolicy] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
   const [viewingPolicy, setViewingPolicy] = useState<Policy | null>(null);
   const [policyIdToDelete, setPolicyIdToDelete] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Check for stored session (simulated)
+  useEffect(() => {
+    const savedUser = localStorage.getItem('pw_session');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const handleLogin = (newUser: User) => {
+    setUser(newUser);
+    localStorage.setItem('pw_session', JSON.stringify(newUser));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('pw_session');
+    setActiveTab('overview');
+  };
 
   const handleDeletePolicy = (id: string) => {
     setPolicyIdToDelete(id);
@@ -158,6 +181,13 @@ const App: React.FC = () => {
     window.open('https://line.me/ti/p/@patrickfwd', '_blank');
   };
 
+  // Guard: If not logged in, show Login View
+  if (!user) {
+    return <LoginView onLogin={handleLogin} lang={lang} />;
+  }
+
+  const isPro = user.role === 'Pro-Member' || user.role === 'Admin';
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Sidebar */}
@@ -173,6 +203,36 @@ const App: React.FC = () => {
           >
             {lang === 'en' ? 'TH' : 'EN'}
           </button>
+        </div>
+
+        {/* User Card */}
+        <div className="px-2">
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 relative group">
+            <div className="flex items-center space-x-3">
+              <img src={user.picture} className="w-10 h-10 rounded-full border border-white shadow-sm" alt={user.name} />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-800 truncate">{user.name}</p>
+                <div className="flex items-center space-x-1">
+                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                    user.role === 'Admin' ? 'bg-indigo-100 text-indigo-700' :
+                    user.role === 'Pro-Member' ? 'bg-amber-100 text-amber-700' :
+                    'bg-slate-200 text-slate-600'
+                  }`}>
+                    {user.role}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-600"
+              title={t.logout}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -197,11 +257,24 @@ const App: React.FC = () => {
               </span>
             </button>
           ))}
+          {user.role === 'Admin' && (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                activeTab === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-800'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <span className="text-lg opacity-80">⚙️</span>
+                <span>{t.admin}</span>
+              </span>
+            </button>
+          )}
         </nav>
 
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mt-auto space-y-4">
           <div className="space-y-2">
-            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Agent View</p>
+            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Consultant</p>
             <div className="flex items-center space-x-3">
               <img src="https://picsum.photos/seed/agent-pat/40/40" className="w-8 h-8 rounded-full border border-white shadow-sm" alt="agent" />
               <div>
@@ -233,9 +306,10 @@ const App: React.FC = () => {
                activeTab === 'analysis' ? t.analysis : 
                activeTab === 'tax' ? t.tax : 
                activeTab === 'vault' ? t.vault : 
-               activeTab === 'profile' ? t.profile : activeTab}
+               activeTab === 'profile' ? t.profile : 
+               activeTab === 'admin' ? t.admin : activeTab}
             </h2>
-            <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{profile.name}</b></p>
+            <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{user.name}</b></p>
           </div>
           <div className="flex items-center space-x-3">
             {activeTab === 'overview' && (
@@ -353,8 +427,15 @@ const App: React.FC = () => {
               policies={policies} 
               onUpload={handleUploadDocument} 
               onDelete={handleDeleteDocument}
-              lang={lang} 
+              lang={lang}
+              isPro={isPro}
             />
+          </div>
+        )}
+
+        {activeTab === 'admin' && (
+          <div className="animate-in fade-in duration-500">
+            <AdminConsole currentUser={user} lang={lang} />
           </div>
         )}
       </main>

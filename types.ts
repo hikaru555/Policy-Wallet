@@ -14,6 +14,16 @@ export enum PaymentFrequency {
   YEARLY = 'Yearly'
 }
 
+export type UserRole = 'Admin' | 'Member' | 'Pro-Member';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string;
+  role: UserRole;
+}
+
 export type MaritalStatus = 'Single' | 'Married' | 'Divorced' | 'Widowed';
 
 export interface PolicyCoverage {
