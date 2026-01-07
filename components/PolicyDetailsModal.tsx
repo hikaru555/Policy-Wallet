@@ -1,0 +1,98 @@
+
+import React from 'react';
+import { Policy, PaymentFrequency } from '../types';
+import { translations, Language } from '../translations';
+
+interface PolicyDetailsModalProps {
+  policy: Policy | null;
+  onClose: () => void;
+  onEdit: (policy: Policy) => void;
+  lang: Language;
+}
+
+const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose, onEdit, lang }) => {
+  if (!policy) return null;
+  const t = translations[lang];
+
+  const getFreqLabel = (f: PaymentFrequency) => {
+    switch(f) {
+      case PaymentFrequency.MONTHLY: return t.monthly;
+      case PaymentFrequency.QUARTERLY: return t.quarterly;
+      case PaymentFrequency.YEARLY: return t.yearly;
+      default: return t.yearly;
+    }
+  }
+
+  const totalSumAssured = policy.coverages.reduce((acc, c) => acc + c.sumAssured, 0);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white">
+          <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors">✕</button>
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl shadow-inner">📄</div>
+            <div>
+              <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">{policy.company}</p>
+              <h3 className="text-2xl font-bold leading-tight">{policy.planName}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{t.status}</p>
+              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${policy.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {policy.status === 'Active' ? t.active : policy.status}
+              </span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Premium ({getFreqLabel(policy.frequency)})</p>
+              <p className="text-xl font-bold text-amber-600">฿{policy.premiumAmount.toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100 w-full" />
+
+          {/* List of Coverages */}
+          <div className="space-y-4">
+            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.details}</h5>
+            <div className="space-y-3">
+              {policy.coverages.map((c, idx) => (
+                <div key={idx} className="flex justify-between items-start p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div>
+                    <p className="font-bold text-slate-800 text-sm">{c.type}</p>
+                    {c.roomRate && <p className="text-[10px] text-slate-500">{t.dailyRoomRate}: ฿{c.roomRate.toLocaleString()}</p>}
+                  </div>
+                  <p className="font-bold text-blue-600 text-sm">฿{c.sumAssured.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between items-center px-3 pt-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t.totalSumAssured}</span>
+              <span className="text-lg font-bold text-blue-800">฿{totalSumAssured.toLocaleString()}</span>
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100 w-full" />
+
+          <div className="grid grid-cols-1 gap-6">
+            <div className="p-4 bg-slate-50 rounded-2xl">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Next Payment Date</p>
+              <p className="text-xl font-bold text-slate-800">{new Date(policy.dueDate).toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <button onClick={() => { onEdit(policy); onClose(); }} className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">{t.edit}</button>
+            <button onClick={onClose} className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95">{t.done}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PolicyDetailsModal;
