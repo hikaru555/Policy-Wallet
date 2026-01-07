@@ -17,7 +17,6 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
     roomRate: '',
     premiumAmount: '',
     dueDate: '',
-    // Added frequency to state
     frequency: PaymentFrequency.YEARLY,
   });
 
@@ -28,8 +27,12 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
       return;
     }
 
-    // Fix: Structuring the Policy object correctly.
-    // The Policy interface expects 'coverages' as an array of PolicyCoverage.
+    const premium = Number(formData.premiumAmount);
+    if (premium < 0) {
+      alert("Premium cannot be negative.");
+      return;
+    }
+
     const newPolicy: Policy = {
       id: Math.random().toString(36).substr(2, 9),
       company: formData.company,
@@ -37,11 +40,11 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
       coverages: [
         {
           type: formData.type,
-          sumAssured: Number(formData.sumAssured),
-          roomRate: formData.roomRate ? Number(formData.roomRate) : undefined,
+          sumAssured: Math.max(0, Number(formData.sumAssured)),
+          roomRate: formData.roomRate ? Math.max(0, Number(formData.roomRate)) : undefined,
         },
       ],
-      premiumAmount: Number(formData.premiumAmount),
+      premiumAmount: premium,
       dueDate: formData.dueDate,
       frequency: formData.frequency,
       status: 'Active',
@@ -60,6 +63,8 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
     });
   };
 
+  const inputClasses = "w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all";
+
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 animate-in slide-in-from-top-2 duration-300">
       <h4 className="font-bold text-lg mb-4">Add New Policy</h4>
@@ -67,7 +72,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Insurance Company</label>
           <select
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.company}
             onChange={(e) => setFormData({ ...formData, company: e.target.value })}
           >
@@ -81,7 +86,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           <input
             type="text"
             placeholder="e.g. Life Shield Plus"
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.planName}
             onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
           />
@@ -89,7 +94,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Coverage Type</label>
           <select
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value as CoverageType })}
           >
@@ -102,8 +107,9 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Sum Assured (฿)</label>
           <input
             type="number"
+            min="0"
             placeholder="1000000"
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.sumAssured}
             onChange={(e) => setFormData({ ...formData, sumAssured: e.target.value })}
           />
@@ -112,8 +118,9 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Room Rate (฿) - Optional</label>
           <input
             type="number"
+            min="0"
             placeholder="4000"
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.roomRate}
             onChange={(e) => setFormData({ ...formData, roomRate: e.target.value })}
           />
@@ -122,8 +129,10 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium Amount (฿)</label>
           <input
             type="number"
+            min="0"
+            step="any"
             placeholder="15000"
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.premiumAmount}
             onChange={(e) => setFormData({ ...formData, premiumAmount: e.target.value })}
           />
@@ -131,7 +140,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Frequency</label>
           <select
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.frequency}
             onChange={(e) => setFormData({ ...formData, frequency: e.target.value as PaymentFrequency })}
           >
@@ -144,7 +153,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date</label>
           <input
             type="date"
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+            className={inputClasses}
             value={formData.dueDate}
             onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
           />

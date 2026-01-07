@@ -19,6 +19,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
     alert(lang === 'en' ? "Profile saved!" : "บันทึกข้อมูลแล้ว!");
   };
 
+  const inputClasses = "w-full p-3 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none";
+
   return (
     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100 space-y-8">
       {/* AI Accuracy Notice */}
@@ -45,12 +47,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
             <h4 className="font-bold text-xs text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">{t.identity}</h4>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.fullName}</label>
-              <input type="text" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <input type="text" className={inputClasses} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.sex}</label>
-                <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none" value={formData.sex} onChange={(e) => setFormData({ ...formData, sex: e.target.value as any })}>
+                <select className={inputClasses} value={formData.sex} onChange={(e) => setFormData({ ...formData, sex: e.target.value as any })}>
                   <option value="Male">{t.male}</option>
                   <option value="Female">{t.female}</option>
                   <option value="Other">{t.other}</option>
@@ -58,13 +60,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.birthDate}</label>
-                <input type="date" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none" value={formData.birthDate} onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })} />
+                <input type="date" className={inputClasses} value={formData.birthDate} onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.maritalStatus}</label>
-                <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none" value={formData.maritalStatus} onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value as any })}>
+                <select className={inputClasses} value={formData.maritalStatus} onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value as any })}>
                   <option value="Single">{t.single}</option>
                   <option value="Married">{t.married}</option>
                   <option value="Divorced">{t.divorced}</option>
@@ -73,7 +75,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.dependents}</label>
-                <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none" value={formData.dependents} onChange={(e) => setFormData({ ...formData, dependents: parseInt(e.target.value) || 0 })} />
+                <input type="number" min="0" className={inputClasses} value={formData.dependents} onChange={(e) => setFormData({ ...formData, dependents: Math.max(0, parseInt(e.target.value) || 0) })} />
               </div>
             </div>
           </div>
@@ -85,21 +87,21 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.income} (Yearly)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                <input type="number" className="w-full p-3 pl-8 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 transition-all outline-none" value={formData.annualIncome} onChange={(e) => setFormData({ ...formData, annualIncome: parseInt(e.target.value) || 0 })} />
+                <input type="number" min="0" className={`${inputClasses} pl-8`} value={formData.annualIncome} onChange={(e) => setFormData({ ...formData, annualIncome: Math.max(0, parseInt(e.target.value) || 0) })} />
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.expenses} (Monthly)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                <input type="number" className="w-full p-3 pl-8 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 transition-all outline-none" value={formData.monthlyExpenses} onChange={(e) => setFormData({ ...formData, monthlyExpenses: parseInt(e.target.value) || 0 })} />
+                <input type="number" min="0" className={`${inputClasses} pl-8`} value={formData.monthlyExpenses} onChange={(e) => setFormData({ ...formData, monthlyExpenses: Math.max(0, parseInt(e.target.value) || 0) })} />
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.totalDebt}</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                <input type="number" className="w-full p-3 pl-8 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-red-600 focus:ring-2 focus:ring-red-500 transition-all outline-none" value={formData.totalDebt} onChange={(e) => setFormData({ ...formData, totalDebt: parseInt(e.target.value) || 0 })} />
+                <input type="number" min="0" className={`${inputClasses} pl-8 text-red-600`} value={formData.totalDebt} onChange={(e) => setFormData({ ...formData, totalDebt: Math.max(0, parseInt(e.target.value) || 0) })} />
               </div>
             </div>
           </div>

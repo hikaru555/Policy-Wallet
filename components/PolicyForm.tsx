@@ -51,28 +51,44 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
 
   const updateCoverage = (index: number, field: keyof PolicyCoverage, value: any) => {
     const updated = [...coverages];
-    updated[index] = { ...updated[index], [field]: value };
+    // Ensure numerical fields don't go below 0
+    let validatedValue = value;
+    if ((field === 'sumAssured' || field === 'roomRate') && value !== '') {
+      validatedValue = Math.max(0, Number(value));
+    }
+    updated[index] = { ...updated[index], [field]: validatedValue };
     setCoverages(updated);
+  };
+
+  const handlePremiumChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || Number(value) >= 0) {
+      setBasicInfo({ ...basicInfo, premiumAmount: value });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (Number(basicInfo.premiumAmount) < 0) return;
+
     const policy: Policy = {
       id: initialPolicy?.id || Math.random().toString(36).substr(2, 9),
       company: basicInfo.company,
       planName: basicInfo.planName,
-      premiumAmount: Number(basicInfo.premiumAmount),
+      premiumAmount: Math.max(0, Number(basicInfo.premiumAmount)),
       dueDate: basicInfo.dueDate,
       frequency: basicInfo.frequency,
       coverages: coverages.map(c => ({
         ...c,
-        sumAssured: Number(c.sumAssured),
-        roomRate: c.roomRate ? Number(c.roomRate) : undefined
+        sumAssured: Math.max(0, Number(c.sumAssured)),
+        roomRate: c.roomRate ? Math.max(0, Number(c.roomRate)) : undefined
       })),
       status: initialPolicy?.status || 'Active',
     };
     onSubmit(policy);
   };
+
+  const inputClasses = "w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all";
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 animate-in slide-in-from-top-2">
@@ -83,7 +99,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Company</label>
             <select 
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+              className={inputClasses} 
               value={basicInfo.company} 
               onChange={(e) => setBasicInfo({ ...basicInfo, company: e.target.value })}
             >
@@ -95,7 +111,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             <input 
               type="text" 
               placeholder="Gold Plan, Plus, etc."
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+              className={inputClasses} 
               value={basicInfo.planName} 
               onChange={(e) => setBasicInfo({ ...basicInfo, planName: e.target.value })} 
             />
@@ -104,15 +120,17 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium</label>
             <input 
               type="number" 
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+              min="0"
+              step="any"
+              className={inputClasses} 
               value={basicInfo.premiumAmount} 
-              onChange={(e) => setBasicInfo({ ...basicInfo, premiumAmount: e.target.value })} 
+              onChange={handlePremiumChange} 
             />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.frequency}</label>
             <select 
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+              className={inputClasses} 
               value={basicInfo.frequency} 
               onChange={(e) => setBasicInfo({ ...basicInfo, frequency: e.target.value as PaymentFrequency })}
             >
@@ -125,7 +143,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date</label>
             <input 
               type="date" 
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+              className={inputClasses} 
               value={basicInfo.dueDate} 
               onChange={(e) => setBasicInfo({ ...basicInfo, dueDate: e.target.value })} 
             />
@@ -154,7 +172,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.coverageType}</label>
                     <select 
-                      className="w-full p-2 bg-white border border-slate-200 rounded text-xs" 
+                      className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
                       value={c.type} 
                       onChange={(e) => updateCoverage(idx, 'type', e.target.value as CoverageType)}
                     >
@@ -165,7 +183,8 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.sumAssured}</label>
                     <input 
                       type="number" 
-                      className="w-full p-2 bg-white border border-slate-200 rounded text-xs" 
+                      min="0"
+                      className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
                       value={c.sumAssured} 
                       onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} 
                     />
@@ -175,7 +194,8 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.dailyRoomRate}</label>
                       <input 
                         type="number" 
-                        className="w-full p-2 bg-white border border-slate-200 rounded text-xs" 
+                        min="0"
+                        className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
                         value={c.roomRate || ''} 
                         onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} 
                         placeholder="Optional"
@@ -187,7 +207,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                   <button 
                     type="button" 
                     onClick={() => removeCoverage(idx)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                   >
                     ✕
                   </button>

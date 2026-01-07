@@ -27,76 +27,180 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
     }
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-emerald-500';
+    if (score >= 50) return 'text-amber-500';
+    return 'text-rose-500';
+  };
+
+  const getScoreStroke = (score: number) => {
+    if (score >= 80) return '#10b981'; // emerald-500
+    if (score >= 50) return '#f59e0b'; // amber-500
+    return '#f43f5e'; // rose-500
+  };
+
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 pb-6 border-b border-slate-50">
         <div>
-          <h4 className="font-bold text-lg">{t.analysis}</h4>
-          <p className="text-sm text-slate-500">Intelligent review based on your profile.</p>
+          <h4 className="font-bold text-2xl text-slate-800">{t.analysis}</h4>
+          <p className="text-sm text-slate-500 mt-1">Smart portfolio review based on your profile and {policies.length} policies.</p>
         </div>
         <button
           onClick={handleRunAnalysis}
-          disabled={loading || policies.length === 0}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium text-sm disabled:opacity-50"
+          disabled={loading}
+          className={`px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl transition-all font-bold text-sm shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50 flex items-center space-x-2`}
         >
-          {loading ? 'Analyzing...' : t.runAnalysis}
+          {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+          <span>{loading ? (lang === 'en' ? 'Processing...' : 'กำลังวิเคราะห์...') : t.runAnalysis}</span>
         </button>
       </div>
 
       {!result && !loading && (
-        <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-          <div className="text-4xl mb-2">🤖</div>
-          <p className="text-slate-600">{t.runAnalysis} - <b>{profile.name}</b></p>
+        <div className="text-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <span className="text-5xl animate-bounce">🤖</span>
+          </div>
+          <h5 className="font-bold text-slate-800 text-lg mb-2">Ready for Intelligent Analysis</h5>
+          <p className="text-slate-400 max-w-sm mx-auto text-sm">
+            Our AI will evaluate your total sum assured, room rates, and critical illness coverage against your financial liabilities.
+          </p>
         </div>
       )}
 
       {loading && (
-        <div className="space-y-4 animate-pulse">
-          <div className="h-24 bg-slate-100 rounded-xl"></div>
-          <div className="h-48 bg-slate-100 rounded-xl"></div>
+        <div className="space-y-6">
+          <div className="flex items-center space-x-6 animate-pulse">
+            <div className="w-32 h-32 bg-slate-100 rounded-full"></div>
+            <div className="space-y-3 flex-1">
+              <div className="h-4 bg-slate-100 rounded w-1/4"></div>
+              <div className="h-6 bg-slate-100 rounded w-3/4"></div>
+              <div className="h-4 bg-slate-100 rounded w-1/2"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div className="h-48 bg-slate-50 rounded-3xl animate-pulse"></div>
+            <div className="h-48 bg-slate-50 rounded-3xl animate-pulse"></div>
+          </div>
         </div>
       )}
 
       {result && !loading && (
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <div className="relative w-20 h-20">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100" />
-                <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="transparent" 
-                  strokeDasharray={213.6}
-                  strokeDashoffset={213.6 - (213.6 * result.score) / 100}
-                  className="text-indigo-600 transition-all duration-1000 ease-out" />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-lg font-bold">{result.score}%</div>
-            </div>
-            <div>
-              <p className="font-bold text-slate-800">{t.healthScore}</p>
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {/* Enhanced Protection Index View */}
+          <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+            {/* Background elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
+
+            <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
+              <div className="relative w-48 h-48 flex-shrink-0">
+                <svg className="w-full h-full transform -rotate-90 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                  {/* Track */}
+                  <circle 
+                    cx="96" cy="96" r="80" 
+                    stroke="rgba(255,255,255,0.1)" 
+                    strokeWidth="16" fill="transparent" 
+                  />
+                  {/* Progress */}
+                  <circle 
+                    cx="96" cy="96" r="80" 
+                    stroke={getScoreStroke(result.score)} 
+                    strokeWidth="16" 
+                    fill="transparent" 
+                    strokeDasharray={502.65}
+                    strokeDashoffset={502.65 - (502.65 * result.score) / 100}
+                    strokeLinecap="round"
+                    className="transition-all duration-[1500ms] ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className={`text-5xl font-black ${getScoreColor(result.score)} tabular-nums`}>{result.score}%</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Level</span>
+                </div>
+              </div>
+
+              <div className="flex-1 text-center lg:text-left space-y-4">
+                <div>
+                  <h3 className="text-3xl font-black tracking-tight mb-2">{t.healthIndex}</h3>
+                  <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border ${
+                    result.score >= 80 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                    result.score >= 50 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
+                    'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                  }`}>
+                    <span className="mr-2">
+                      {result.score >= 80 ? '✨ Excellent Protection' : 
+                       result.score >= 50 ? '🛡️ Moderate Protection' : 
+                       '⚠️ Critical Gaps Found'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-slate-400 text-lg leading-relaxed max-w-2xl">
+                  {result.score >= 80 
+                    ? (lang === 'en' ? "Your current portfolio is robust and well-balanced. You have covered major risks according to industry standards." : "พอร์ตโฟลิโอของคุณแข็งแกร่งและสมดุลเป็นอย่างดี คุณได้รับความคุ้มครองความเสี่ยงหลักตามมาตรฐานอุตสาหกรรมแล้ว")
+                    : result.score >= 50 
+                    ? (lang === 'en' ? "Your protection is decent but lacks specialization in key areas. Consider strengthening the gaps identified below." : "ความคุ้มครองของคุณอยู่ในระดับพอใช้แต่ยังขาดความเฉพาะเจาะจงในบางด้าน ควรพิจารณาเสริมความแข็งแกร่งในจุดที่ยังเป็นช่องว่าง")
+                    : (lang === 'en' ? "Urgent attention required. Significant financial exposure detected. Follow the recommendations to secure your family's future." : "ต้องการการดูแลอย่างเร่งด่วน พบความเสี่ยงทางการเงินที่สำคัญ โปรดปฏิบัติตามคำแนะนำเพื่อรักษาอนาคตของครอบครัวคุณ")
+                  }
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <h5 className="font-bold text-sm text-slate-700 uppercase tracking-wider">{t.gaps}</h5>
-              {result.gaps.map((gap, i) => (
-                <div key={i} className="p-3 bg-red-50 border border-red-100 rounded-xl">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="font-bold text-xs text-red-800">{gap.category}</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-200 text-red-900">{gap.priority}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 px-1 border-b border-slate-100 pb-4">
+                <span className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl shadow-sm">🚩</span>
+                <h5 className="font-black text-slate-800 uppercase tracking-widest">{t.gaps}</h5>
+              </div>
+              <div className="space-y-4">
+                {result.gaps.map((gap, i) => (
+                  <div key={i} className={`group p-6 rounded-[2rem] border transition-all hover:shadow-xl hover:-translate-y-1 ${
+                    gap.priority === 'High' ? 'bg-rose-50 border-rose-100' : 
+                    gap.priority === 'Medium' ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'
+                  }`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <p className={`font-black text-xs uppercase tracking-widest ${
+                        gap.priority === 'High' ? 'text-rose-700' : 
+                        gap.priority === 'Medium' ? 'text-amber-700' : 'text-slate-700'
+                      }`}>{gap.category}</p>
+                      <span className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-tighter shadow-sm ${
+                        gap.priority === 'High' ? 'bg-rose-200 text-rose-900' : 
+                        gap.priority === 'Medium' ? 'bg-amber-200 text-amber-900' : 'bg-slate-200 text-slate-900'
+                      }`}>{gap.priority}</span>
+                    </div>
+                    <p className="text-sm text-slate-800 leading-relaxed font-semibold">{gap.description}</p>
                   </div>
-                  <p className="text-xs text-red-700 leading-relaxed">{gap.description}</p>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-3">
-              <h5 className="font-bold text-sm text-slate-700 uppercase tracking-wider">{t.recommendations}</h5>
-              <ul className="space-y-2">
-                {result.recommendations.map((rec, i) => (
-                  <li key={i} className="flex items-start text-xs text-slate-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                    <span className="mr-2 text-emerald-600">✓</span> {rec}
-                  </li>
                 ))}
-              </ul>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 px-1 border-b border-slate-100 pb-4">
+                <span className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl shadow-sm">💡</span>
+                <h5 className="font-black text-slate-800 uppercase tracking-widest">{t.recommendations}</h5>
+              </div>
+              <div className="space-y-4">
+                {result.recommendations.map((rec, i) => (
+                  <div key={i} className="flex items-start bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:border-indigo-200 hover:shadow-lg transition-all">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mr-4 mt-0.5 font-bold text-sm">
+                      {i + 1}
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed font-medium">{rec}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-10 flex flex-col items-center">
+            <div className="px-6 py-2 bg-slate-100 rounded-full text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] mb-6 shadow-inner">
+              Powered by Gemini 3 Pro
+            </div>
+            <div className="flex space-x-3">
+              <div className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse delay-75"></div>
+              <div className="w-2 h-2 rounded-full bg-indigo-200 animate-pulse delay-150"></div>
             </div>
           </div>
         </div>

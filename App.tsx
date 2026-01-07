@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Policy, CoverageType, UserProfile, PaymentFrequency } from './types';
+import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument } from './types';
 import { translations, Language } from './translations';
 import Dashboard from './components/Dashboard';
 import PolicyList from './components/PolicyList';
@@ -16,7 +16,7 @@ import ShareReportModal from './components/ShareReportModal';
 const MOCK_POLICIES: Policy[] = [
   {
     id: '1',
-    company: 'AIA',
+    company: 'AIA Thailand',
     planName: 'Health First Gold',
     coverages: [
       { type: CoverageType.HEALTH, sumAssured: 1000000, roomRate: 4000 },
@@ -25,11 +25,12 @@ const MOCK_POLICIES: Policy[] = [
     premiumAmount: 25000,
     frequency: PaymentFrequency.YEARLY,
     dueDate: '2025-05-15',
-    status: 'Active'
+    status: 'Active',
+    documents: []
   },
   {
     id: '2',
-    company: 'FWD',
+    company: 'FWD Life Insurance',
     planName: 'Life Shield Plus',
     coverages: [
       { type: CoverageType.LIFE, sumAssured: 2000000 }
@@ -37,11 +38,12 @@ const MOCK_POLICIES: Policy[] = [
     premiumAmount: 12000,
     frequency: PaymentFrequency.MONTHLY,
     dueDate: '2025-08-20',
-    status: 'Grace Period'
+    status: 'Grace Period',
+    documents: []
   },
   {
     id: '3',
-    company: 'Thai Life',
+    company: 'Thai Life Insurance',
     planName: 'Critical Care 50',
     coverages: [
       { type: CoverageType.CRITICAL, sumAssured: 500000 },
@@ -50,7 +52,8 @@ const MOCK_POLICIES: Policy[] = [
     premiumAmount: 8500,
     frequency: PaymentFrequency.QUARTERLY,
     dueDate: '2025-11-01',
-    status: 'Active'
+    status: 'Active',
+    documents: []
   }
 ];
 
@@ -109,6 +112,30 @@ const App: React.FC = () => {
     setActiveTab('policies');
     setIsAddingPolicy(!isAddingPolicy);
     setEditingPolicy(null);
+  };
+
+  const handleUploadDocument = (policyId: string, doc: PolicyDocument) => {
+    setPolicies(prev => prev.map(p => {
+      if (p.id === policyId) {
+        return {
+          ...p,
+          documents: [...(p.documents || []), doc]
+        };
+      }
+      return p;
+    }));
+  };
+
+  const handleDeleteDocument = (policyId: string, docId: string) => {
+    setPolicies(prev => prev.map(p => {
+      if (p.id === policyId) {
+        return {
+          ...p,
+          documents: (p.documents || []).filter(d => d.id !== docId)
+        };
+      }
+      return p;
+    }));
   };
 
   return (
@@ -215,15 +242,39 @@ const App: React.FC = () => {
                       {t.connectLine}
                     </button>
                  </div>
-                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h5 className="font-bold text-sm text-slate-800 mb-4 uppercase tracking-widest">{t.healthIndex}</h5>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-slate-500">{t.healthIndex}</span>
-                      <span className="text-xs font-bold text-emerald-600">Good</span>
+                 {/* Re-designed Protection Index (Wisely Displayed) */}
+                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-6">
+                      <h5 className="font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">{t.healthIndex}</h5>
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                     </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="w-[75%] h-full bg-emerald-500"></div>
+                    
+                    <div className="flex items-end justify-between mb-4">
+                      <div>
+                        <p className="text-4xl font-black text-slate-900 tabular-nums">75%</p>
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase mt-1">Status: Stable</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-2xl">🛡️</span>
+                      </div>
                     </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                        <span>POOR</span>
+                        <span>EXCELLENT</span>
+                      </div>
+                      <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex p-0.5">
+                        <div className="h-full bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setActiveTab('analysis')}
+                      className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100 transition-all"
+                    >
+                      View AI Breakdown →
+                    </button>
                  </div>
               </div>
             </div>
@@ -258,7 +309,12 @@ const App: React.FC = () => {
 
         {activeTab === 'vault' && (
           <div className="animate-in fade-in duration-500">
-            <VaultView policies={policies} lang={lang} />
+            <VaultView 
+              policies={policies} 
+              onUpload={handleUploadDocument} 
+              onDelete={handleDeleteDocument}
+              lang={lang} 
+            />
           </div>
         )}
       </main>

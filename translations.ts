@@ -92,7 +92,18 @@ export const translations = {
     protectionSummary: "Protection Summary",
     socialConnector: "Connect via Social",
     savingImage: "Processing image...",
-    creatorCredit: "The person who create is Patrick คลินิกประกัน FWD"
+    creatorCredit: "The person who create is Patrick คลินิกประกัน FWD",
+    selectPolicy: "Select Policy",
+    uploadSuccess: "Document uploaded successfully",
+    uploading: "Uploading...",
+    viewFile: "View File",
+    deleteFile: "Delete File",
+    pension: "Pension/Retirement",
+    savings: "Savings/Endowment",
+    health: "Health Insurance",
+    life: "Life Insurance",
+    critical: "Critical Illness",
+    accident: "Personal Accident"
   },
   th: {
     appName: "Policy Wallet",
@@ -186,7 +197,18 @@ export const translations = {
     protectionSummary: "สรุปความคุ้มครองประกัน",
     socialConnector: "เชื่อมต่อผ่านโซเชียล",
     savingImage: "กำลังประมวลผลรูปภาพ...",
-    creatorCredit: "The person who create is Patrick คลินิกประกัน FWD"
+    creatorCredit: "The person who create is Patrick คลินิกประกัน FWD",
+    selectPolicy: "เลือกกรมธรรม์",
+    uploadSuccess: "อัปโหลดเอกสารสำเร็จแล้ว",
+    uploading: "กำลังอัปโหลด...",
+    viewFile: "ดูไฟล์",
+    deleteFile: "ลบไฟล์",
+    pension: "ประกันบำนาญ",
+    savings: "ประกันออมทรัพย์",
+    health: "ประกันสุขภาพ",
+    life: "ประกันชีวิต",
+    critical: "โรคร้ายแรง",
+    accident: "อุบัติเหตุ"
   }
 };
 

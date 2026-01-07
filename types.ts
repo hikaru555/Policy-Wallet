@@ -4,7 +4,8 @@ export enum CoverageType {
   HEALTH = 'Health Insurance',
   ACCIDENT = 'Personal Accident',
   CRITICAL = 'Critical Illness',
-  SAVINGS = 'Savings/Endowment'
+  SAVINGS = 'Savings/Endowment',
+  PENSION = 'Pension/Retirement'
 }
 
 export enum PaymentFrequency {
@@ -21,6 +22,15 @@ export interface PolicyCoverage {
   roomRate?: number;
 }
 
+export interface PolicyDocument {
+  id: string;
+  name: string;
+  category: 'Policy' | 'Receipt' | 'Medical' | 'Other';
+  mimeType: string;
+  url: string; // Base64 or Blob URL for local session
+  uploadDate: string;
+}
+
 export interface Policy {
   id: string;
   company: string;
@@ -31,6 +41,7 @@ export interface Policy {
   frequency: PaymentFrequency;
   status: 'Active' | 'Lapsed' | 'Grace Period';
   documentUrl?: string;
+  documents?: PolicyDocument[];
 }
 
 export interface UserProfile {
