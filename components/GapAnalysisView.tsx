@@ -39,6 +39,10 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
     return '#f43f5e'; // rose-500
   };
 
+  const handleConsultExpert = () => {
+    window.open('https://line.me/ti/p/@patrickfwd', '_blank');
+  };
+
   return (
     <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 pb-6 border-b border-slate-50">
@@ -193,14 +197,17 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
             </div>
           </div>
 
-          <div className="pt-10 flex flex-col items-center">
-            <div className="px-6 py-2 bg-slate-100 rounded-full text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] mb-6 shadow-inner">
+          <div className="pt-10 flex flex-col items-center border-t border-slate-100">
+            <h5 className="text-lg font-bold text-slate-800 mb-6">{t.consultExpert}</h5>
+            <button 
+              onClick={handleConsultExpert}
+              className="px-12 py-4 bg-[#00B900] hover:bg-[#009e00] text-white rounded-[2rem] font-black text-lg shadow-2xl shadow-green-200 transition-all flex items-center gap-4 active:scale-95 group"
+            >
+              <span className="text-3xl bg-white/20 p-2 rounded-full group-hover:rotate-12 transition-transform">🧔</span>
+              <span>{t.connectLine}</span>
+            </button>
+            <div className="mt-8 px-6 py-2 bg-slate-100 rounded-full text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] shadow-inner">
               Powered by Gemini 3 Pro
-            </div>
-            <div className="flex space-x-3">
-              <div className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></div>
-              <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse delay-75"></div>
-              <div className="w-2 h-2 rounded-full bg-indigo-200 animate-pulse delay-150"></div>
             </div>
           </div>
         </div>

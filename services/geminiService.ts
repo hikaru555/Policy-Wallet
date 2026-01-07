@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Policy, GapAnalysisResult, UserProfile } from "../types";
+import { Policy, GapAnalysisResult, UserProfile, CoverageType, PaymentFrequency } from "../types";
 import { Language } from "../translations";
 
 export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfile, lang: Language): Promise<GapAnalysisResult> => {
@@ -93,5 +93,133 @@ export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfi
       }],
       recommendations: [lang === 'en' ? "Contact your agent for a manual gap analysis review." : "โปรดติดต่อตัวแทนของคุณเพื่อขอรับการวิเคราะห์ช่องว่างความคุ้มครองด้วยตนเอง"]
     };
+  }
+};
+
+export const analyzeTaxOptimization = async (policies: Policy[], profile: UserProfile, lang: Language): Promise<{
+  advice: string[];
+  suggestedProducts: string[];
+  estimatedTotalBenefit: number;
+}> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const policySummary = policies.map(p => {
+    return `Plan: ${p.planName}, Company: ${p.company}, Annual Premium: ฿${p.premiumAmount.toLocaleString()}, Frequency: ${p.frequency}, Types: ${p.coverages.map(c => c.type).join(", ")}`;
+  }).join("; ");
+
+  const prompt = `
+    Act as a Thai Tax Planning Expert. Review the client's insurance portfolio for tax optimization.
+    
+    Thai Revenue Department Rules:
+    1. Life Insurance: Deduction up to ฿100,000.
+    2. Health Insurance: Deduction up to ฿25,000 (Note: Combined with Life must not exceed ฿100,000).
+    3. Pension Insurance: Deduction up to ฿200,000 (Note: Must not exceed 15% of annual income, and combined retirement cap is ฿500,000).
+    
+    The TOTAL insurance deduction can reach ฿300,000 (100k Life/Health + 200k Pension).
+
+    Client Context:
+    - Name: ${profile.name}
+    - Annual Income: ฿${profile.annualIncome.toLocaleString()}
+    - Policies: ${policySummary || "No existing policies."}
+    
+    Task:
+    1. Identify if the client is missing out on tax benefits.
+    2. Suggest specific ways to fill the tax deduction gaps (e.g., "Increase pension premium by ฿50k").
+    3. Calculate estimated total tax benefit based on Thai tax brackets.
+
+    Output Language: ${lang === 'th' ? 'Thai' : 'English'}
+    
+    Return a JSON object:
+    - advice: Array of strings (Strategic tax planning advice).
+    - suggestedProducts: Array of strings (Types of insurance to consider for tax saving).
+    - estimatedTotalBenefit: Number (Total tax deduction amount used).
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            advice: { type: Type.ARRAY, items: { type: Type.STRING } },
+            suggestedProducts: { type: Type.ARRAY, items: { type: Type.STRING } },
+            estimatedTotalBenefit: { type: Type.NUMBER }
+          },
+          required: ["advice", "suggestedProducts", "estimatedTotalBenefit"]
+        }
+      }
+    });
+    return JSON.parse(response.text.trim());
+  } catch (error) {
+    console.error("Tax analysis failed", error);
+    return {
+      advice: ["Unable to load AI tax advice at this time."],
+      suggestedProducts: [],
+      estimatedTotalBenefit: 0
+    };
+  }
+};
+
+export const parsePolicyDocument = async (base64Data: string, mimeType: string): Promise<Partial<Policy> | null> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const prompt = `
+    Analyze this insurance policy document and extract the key information into a structured format.
+    Return only a JSON object with these keys:
+    - company: (string, e.g. "AIA Thailand", "FWD Life Insurance", etc.)
+    - planName: (string)
+    - premiumAmount: (number)
+    - frequency: (one of: "Monthly", "Quarterly", "Yearly")
+    - dueDate: (string as YYYY-MM-DD)
+    - coverages: (array of objects with keys: type [one of: "Life Insurance", "Health Insurance", "Personal Accident", "Critical Illness", "Savings/Endowment", "Pension/Retirement"], sumAssured [number], roomRate [number or null])
+    
+    Important: If multiple coverages exist (e.g. Life + Health Rider), include all.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          { inlineData: { data: base64Data.split(',')[1], mimeType: mimeType } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            company: { type: Type.STRING },
+            planName: { type: Type.STRING },
+            premiumAmount: { type: Type.NUMBER },
+            frequency: { type: Type.STRING, enum: ["Monthly", "Quarterly", "Yearly"] },
+            dueDate: { type: Type.STRING },
+            coverages: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  type: { type: Type.STRING, enum: ["Life Insurance", "Health Insurance", "Personal Accident", "Critical Illness", "Savings/Endowment", "Pension/Retirement"] },
+                  sumAssured: { type: Type.NUMBER },
+                  roomRate: { type: Type.NUMBER, nullable: true }
+                },
+                required: ["type", "sumAssured"]
+              }
+            }
+          },
+          required: ["company", "planName", "premiumAmount", "frequency", "dueDate", "coverages"]
+        }
+      }
+    });
+
+    const result = JSON.parse(response.text.trim());
+    return result;
+  } catch (err) {
+    console.error("AI Policy parsing failed", err);
+    return null;
   }
 };

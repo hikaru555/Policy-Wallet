@@ -12,6 +12,7 @@ import ProfileForm from './components/ProfileForm';
 import VaultView from './components/VaultView';
 import ConfirmDialog from './components/ConfirmDialog';
 import ShareReportModal from './components/ShareReportModal';
+import TaxOptimizationView from './components/TaxOptimizationView';
 
 const MOCK_POLICIES: Policy[] = [
   {
@@ -68,13 +69,28 @@ const DEFAULT_PROFILE: UserProfile = {
   totalDebt: 3500000
 };
 
+const AppLogo = () => (
+  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shadow-lg rounded-xl flex-shrink-0">
+    <rect width="40" height="40" rx="12" fill="url(#logo_gradient)" />
+    <path d="M20 10C20 10 12 13 12 19V25C12 28 16 31 20 32C24 31 28 28 28 25V19C28 13 20 10 20 10Z" fill="white" fillOpacity="0.2" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M16 18H24V26C24 26.5523 23.5523 27 23 27H17C16.4477 27 16 26.5523 16 26V18ZM18 20V25H22V20H18Z" fill="white" />
+    <path d="M19 13L13 15V19C13 23 17 26 19 27L19 13Z" fill="white" fillOpacity="0.5" />
+    <defs>
+      <linearGradient id="logo_gradient" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#3B82F6" />
+        <stop offset="1" stopColor="#1E40AF" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const t = translations[lang];
 
   const [policies, setPolicies] = useState<Policy[]>(MOCK_POLICIES);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
-  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'vault' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile'>('overview');
   const [isAddingPolicy, setIsAddingPolicy] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
   const [viewingPolicy, setViewingPolicy] = useState<Policy | null>(null);
@@ -138,18 +154,22 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleConnectLine = () => {
+    window.open('https://line.me/ti/p/@patrickfwd', '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col p-4 space-y-6">
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg font-bold">PW</div>
+            <AppLogo />
             <h1 className="text-xl font-bold tracking-tight text-slate-800">{t.appName}</h1>
           </div>
           <button 
             onClick={() => setLang(lang === 'en' ? 'th' : 'en')}
-            className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 uppercase tracking-widest text-slate-600"
+            className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 uppercase tracking-widest text-slate-600 transition-colors"
           >
             {lang === 'en' ? 'TH' : 'EN'}
           </button>
@@ -160,17 +180,21 @@ const App: React.FC = () => {
             { id: 'overview', label: t.overview, icon: '📊' },
             { id: 'policies', label: t.policies, icon: '📄' },
             { id: 'analysis', label: t.analysis, icon: '🤖' },
+            { id: 'tax', label: t.tax, icon: '💰' },
             { id: 'profile', label: t.profile, icon: '👤' },
             { id: 'vault', label: t.vault, icon: '🛡️' }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id as any); setIsAddingPolicy(false); setEditingPolicy(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 activeTab === tab.id ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
               }`}
             >
-              <span>{tab.icon} {tab.label}</span>
+              <span className="flex items-center gap-3">
+                <span className="text-lg opacity-80">{tab.icon}</span>
+                <span>{tab.label}</span>
+              </span>
             </button>
           ))}
         </nav>
@@ -179,17 +203,22 @@ const App: React.FC = () => {
           <div className="space-y-2">
             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Agent View</p>
             <div className="flex items-center space-x-3">
-              <img src="https://picsum.photos/seed/agent/40/40" className="w-8 h-8 rounded-full border border-white shadow-sm" alt="agent" />
+              <img src="https://picsum.photos/seed/agent-pat/40/40" className="w-8 h-8 rounded-full border border-white shadow-sm" alt="agent" />
               <div>
-                <p className="text-xs font-bold text-slate-800">Somchai Agent</p>
-                <p className="text-[10px] text-slate-500">Premium Partner</p>
+                <p className="text-xs font-bold text-slate-800">Patrick</p>
+                <p className="text-[10px] text-slate-500 font-medium">คลินิกประกัน FWD</p>
               </div>
             </div>
           </div>
           <div className="pt-2 border-t border-slate-200">
-             <p className="text-[9px] text-slate-400 font-medium leading-tight">
-               {t.creatorCredit}
-             </p>
+             <a 
+              href="https://line.me/ti/p/@patrickfwd" 
+              target="_blank" 
+              rel="noreferrer"
+              className="text-[10px] text-blue-600 font-bold leading-tight hover:underline flex items-center"
+             >
+               {t.creatorCredit} <span className="ml-1 text-[8px]">↗</span>
+             </a>
           </div>
         </div>
       </aside>
@@ -198,20 +227,21 @@ const App: React.FC = () => {
       <main className="flex-1 p-6 md:p-10 space-y-8 overflow-y-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 capitalize">
+            <h2 className="text-2xl font-bold text-slate-900 capitalize tracking-tight">
               {activeTab === 'overview' ? t.overview : 
                activeTab === 'policies' ? t.policies : 
                activeTab === 'analysis' ? t.analysis : 
+               activeTab === 'tax' ? t.tax : 
                activeTab === 'vault' ? t.vault : 
                activeTab === 'profile' ? t.profile : activeTab}
             </h2>
-            <p className="text-slate-500 text-sm">{t.welcomeBack} <b>{profile.name}</b></p>
+            <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{profile.name}</b></p>
           </div>
           <div className="flex items-center space-x-3">
             {activeTab === 'overview' && (
               <button 
                 onClick={() => setIsShareModalOpen(true)}
-                className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50"
+                className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
               >
                 {t.shareReport}
               </button>
@@ -219,7 +249,7 @@ const App: React.FC = () => {
             {(activeTab === 'overview' || activeTab === 'policies') && (
               <button 
                 onClick={toggleAddingPolicy}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md transition-shadow"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition-all active:scale-95"
               >
                 {(isAddingPolicy || editingPolicy) ? t.cancel : `+ ${t.addPolicy}`}
               </button>
@@ -235,10 +265,14 @@ const App: React.FC = () => {
                 <PolicyList policies={policies} onDelete={handleDeletePolicy} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} />
               </div>
               <div className="space-y-6">
-                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white shadow-xl">
-                    <h5 className="font-bold text-lg mb-2">{t.lineSync}</h5>
-                    <p className="text-blue-100 text-sm mb-4">{t.lineDesc}</p>
-                    <button className="w-full py-2 bg-white text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors">
+                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white shadow-xl relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform"></div>
+                    <h5 className="font-bold text-lg mb-2 relative z-10">{t.lineSync}</h5>
+                    <p className="text-blue-100 text-sm mb-4 relative z-10 leading-relaxed font-medium">{t.lineDesc}</p>
+                    <button 
+                      onClick={handleConnectLine}
+                      className="w-full py-2.5 bg-white text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-50 transition-all relative z-10 shadow-lg active:scale-95"
+                    >
                       {t.connectLine}
                     </button>
                  </div>
@@ -271,7 +305,7 @@ const App: React.FC = () => {
                     
                     <button 
                       onClick={() => setActiveTab('analysis')}
-                      className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100 transition-all"
+                      className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100 transition-all active:scale-95"
                     >
                       View AI Breakdown →
                     </button>
@@ -298,6 +332,12 @@ const App: React.FC = () => {
         {activeTab === 'analysis' && (
           <div className="animate-in fade-in duration-500">
             <GapAnalysisView policies={policies} profile={profile} lang={lang} />
+          </div>
+        )}
+
+        {activeTab === 'tax' && (
+          <div className="animate-in fade-in duration-500">
+            <TaxOptimizationView policies={policies} profile={profile} lang={lang} />
           </div>
         )}
 

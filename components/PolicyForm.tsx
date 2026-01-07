@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CoverageType, Policy, PaymentFrequency, PolicyCoverage } from '../types';
 import { INSURANCE_COMPANIES } from '../constants';
 import { translations, Language } from '../translations';
+import { parsePolicyDocument } from '../services/geminiService';
 
 interface PolicyFormProps {
   initialPolicy?: Policy;
@@ -13,6 +14,8 @@ interface PolicyFormProps {
 
 const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCancel, lang }) => {
   const t = translations[lang];
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isScanning, setIsScanning] = useState(false);
   
   const [basicInfo, setBasicInfo] = useState({
     company: INSURANCE_COMPANIES[0],
@@ -51,7 +54,6 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
 
   const updateCoverage = (index: number, field: keyof PolicyCoverage, value: any) => {
     const updated = [...coverages];
-    // Ensure numerical fields don't go below 0
     let validatedValue = value;
     if ((field === 'sumAssured' || field === 'roomRate') && value !== '') {
       validatedValue = Math.max(0, Number(value));
@@ -65,6 +67,36 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
     if (value === '' || Number(value) >= 0) {
       setBasicInfo({ ...basicInfo, premiumAmount: value });
     }
+  };
+
+  const handleAiScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      const extractedData = await parsePolicyDocument(base64, file.type);
+      
+      if (extractedData) {
+        setBasicInfo({
+          company: extractedData.company || INSURANCE_COMPANIES[0],
+          planName: extractedData.planName || '',
+          premiumAmount: extractedData.premiumAmount?.toString() || '',
+          dueDate: extractedData.dueDate || '',
+          frequency: (extractedData.frequency as PaymentFrequency) || PaymentFrequency.YEARLY,
+        });
+        if (extractedData.coverages && extractedData.coverages.length > 0) {
+          setCoverages(extractedData.coverages as PolicyCoverage[]);
+        }
+      } else {
+        alert(lang === 'en' ? "Failed to scan policy. Please try again or enter manually." : "การสแกนล้มเหลว โปรดลองอีกครั้งหรือกรอกข้อมูลด้วยตนเอง");
+      }
+      setIsScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -91,8 +123,34 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   const inputClasses = "w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all";
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 animate-in slide-in-from-top-2">
-      <h4 className="font-bold text-lg mb-4">{initialPolicy ? t.edit : `+ ${t.addPolicy}`}</h4>
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 animate-in slide-in-from-top-2 relative overflow-hidden">
+      {isScanning && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="font-bold text-blue-600 animate-pulse">{lang === 'en' ? 'AI Scanning your policy...' : 'AI กำลังวิเคราะห์กรมธรรม์ของคุณ...'}</p>
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <h4 className="font-bold text-lg">{initialPolicy ? t.edit : `+ ${t.addPolicy}`}</h4>
+        {!initialPolicy && (
+          <button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all font-bold text-xs"
+          >
+            <span>✨ AI Auto-fill from Scan</span>
+          </button>
+        )}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleAiScan} 
+          className="hidden" 
+          accept="image/*,application/pdf"
+        />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -189,7 +247,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                       onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} 
                     />
                   </div>
-                  {c.type === CoverageType.HEALTH && (
+                  {(c.type === CoverageType.HEALTH || (c.type as any) === 'Health Insurance') && (
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.dailyRoomRate}</label>
                       <input 
