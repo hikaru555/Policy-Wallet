@@ -21,7 +21,8 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const projectId = "policy-wallet-4521"; // Simulated from screenshot context
+  // Exact Project ID from your screenshot to ensure CLI fallback works
+  const projectId = "gen-lang-client-0928682283";
 
   if (currentUser.role !== 'Admin') {
     return (
@@ -261,55 +262,86 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
       )}
 
       {activeSubTab === 'deploy' && (
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 animate-in zoom-in-95 duration-500">
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-6 border-b border-slate-50">
-             <div>
-               <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.deployTitle}</h3>
-               <p className="text-slate-500 text-sm mt-1">{t.deployDesc}</p>
-             </div>
-             <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold text-xs border border-blue-100">
-               <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-               <span>Cloud SDK Recommended</span>
-             </div>
-           </div>
+        <div className="space-y-8">
+          {/* Troubleshooting Section for User's Billing Issue */}
+          <div className="bg-amber-50 border border-amber-200 rounded-[2.5rem] p-8 animate-in slide-in-from-top-4 duration-500">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-amber-100 text-2xl flex items-center justify-center rounded-2xl shadow-sm">⚠️</div>
+              <div className="flex-1">
+                <h3 className="text-xl font-black text-amber-900 mb-2">{t.troubleshoot}</h3>
+                <p className="text-amber-800 text-sm mb-6 opacity-90">{t.troubleshootDesc}</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white/60 p-4 rounded-2xl border border-amber-100">
+                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Step 1: Verify Account Link</p>
+                    <p className="text-xs text-amber-900 mb-3">Go to Billing in GCP and ensure <b>{projectId}</b> is linked to your credit card / billing account.</p>
+                    <a 
+                      href={`https://console.cloud.google.com/billing/projects?project=${projectId}`} 
+                      target="_blank" 
+                      className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center"
+                    >
+                      Verify GCP Billing Link ↗
+                    </a>
+                  </div>
+                  <div className="bg-white/60 p-4 rounded-2xl border border-amber-100">
+                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Step 2: Force Refresh</p>
+                    <p className="text-xs text-amber-900">Once linked, click <b>"Refresh"</b> in the blue deployment dialog. Sometimes you need to close and reopen the dialog for it to register.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-           <div className="space-y-8">
-             {deploymentSteps.map((step, i) => (
-               <div key={step.id} className="relative group">
-                 <div className="flex items-center space-x-4 mb-3">
-                   <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:bg-indigo-50 transition-colors">
-                     {step.icon}
-                   </div>
-                   <h4 className="font-bold text-slate-800">{step.title}</h4>
-                 </div>
-                 
-                 <div className="relative">
-                   <pre className="p-5 bg-slate-900 text-blue-400 rounded-2xl overflow-x-auto text-xs font-mono border border-slate-800 shadow-xl group-hover:border-indigo-500/50 transition-all">
-                     <code>{step.command}</code>
-                   </pre>
-                   <button 
-                     onClick={() => handleCopy(step.command, step.id)}
-                     className={`absolute top-4 right-4 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
-                       copiedId === step.id ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'
-                     }`}
-                   >
-                     {copiedId === step.id ? 'Copied! ✅' : 'Copy 📋'}
-                   </button>
-                 </div>
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 animate-in zoom-in-95 duration-500">
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-6 border-b border-slate-50">
+               <div>
+                 <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.deployTitle}</h3>
+                 <p className="text-slate-500 text-sm mt-1">{t.deployDesc}</p>
                </div>
-             ))}
-           </div>
-
-           <div className="mt-12 p-8 bg-indigo-600 rounded-[2rem] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-indigo-100 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-             <div className="relative z-10 text-center md:text-left">
-               <h4 className="text-xl font-black mb-2">Need a Custom Cloud Solution?</h4>
-               <p className="text-indigo-100 text-sm">We can assist with Terraform scripts or direct GCP console setup.</p>
+               <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold text-xs border border-blue-100">
+                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                 <span>Cloud SDK Recommended</span>
+               </div>
              </div>
-             <button className="relative z-10 px-8 py-4 bg-white text-indigo-600 rounded-2xl font-black text-sm shadow-xl hover:bg-indigo-50 transition-all active:scale-95">
-               Contact Support 🧔
-             </button>
-           </div>
+
+             <div className="space-y-8">
+               {deploymentSteps.map((step, i) => (
+                 <div key={step.id} className="relative group">
+                   <div className="flex items-center space-x-4 mb-3">
+                     <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:bg-indigo-50 transition-colors">
+                       {step.icon}
+                     </div>
+                     <h4 className="font-bold text-slate-800">{step.title}</h4>
+                   </div>
+                   
+                   <div className="relative">
+                     <pre className="p-5 bg-slate-900 text-blue-400 rounded-2xl overflow-x-auto text-xs font-mono border border-slate-800 shadow-xl group-hover:border-indigo-500/50 transition-all">
+                       <code>{step.command}</code>
+                     </pre>
+                     <button 
+                       onClick={() => handleCopy(step.command, step.id)}
+                       className={`absolute top-4 right-4 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+                         copiedId === step.id ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'
+                       }`}
+                     >
+                       {copiedId === step.id ? 'Copied! ✅' : 'Copy 📋'}
+                     </button>
+                   </div>
+                 </div>
+               ))}
+             </div>
+
+             <div className="mt-12 p-8 bg-indigo-600 rounded-[2rem] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-indigo-100 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+               <div className="relative z-10 text-center md:text-left">
+                 <h4 className="text-xl font-black mb-2">Manual Deployment Fallback</h4>
+                 <p className="text-indigo-100 text-sm">If the UI button doesn't activate, copy the commands above and run them in your terminal.</p>
+               </div>
+               <button className="relative z-10 px-8 py-4 bg-white text-indigo-600 rounded-2xl font-black text-sm shadow-xl hover:bg-indigo-50 transition-all active:scale-95">
+                 Get CLI Support 🧔
+               </button>
+             </div>
+          </div>
         </div>
       )}
     </div>

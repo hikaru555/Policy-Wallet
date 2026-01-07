@@ -140,7 +140,9 @@ export const translations = {
     setupStorage: "3. Create Storage Bucket",
     deployApp: "4. Deploy to Cloud Run",
     gcpTemplates: "GCP Solution Templates",
-    templateDesc: "Based on your dashboard, use these templates to build your app infra faster."
+    templateDesc: "Based on your dashboard, use these templates to build your app infra faster.",
+    troubleshoot: "Fix Billing Connection",
+    troubleshootDesc: "If you've set up billing but the button is still disabled, follow these verification steps:"
   },
   th: {
     appName: "Policy Wallet",
@@ -279,6 +281,8 @@ export const translations = {
     setupStorage: "3. สร้างถังเก็บเอกสาร",
     deployApp: "4. ติดตั้งบน Cloud Run",
     gcpTemplates: "เทมเพลตโซลูชัน GCP",
-    templateDesc: "อ้างอิงจากหน้าแดชบอร์ดของคุณ ใช้เทมเพลตเหล่านี้เพื่อสร้างโครงสร้างพื้นฐานของแอปได้เร็วขึ้น"
+    templateDesc: "อ้างอิงจากหน้าแดชบอร์ดของคุณ ใช้เทมเพลตเหล่านี้เพื่อสร้างโครงสร้างพื้นฐานของแอปได้เร็วขึ้น",
+    troubleshoot: "แก้ไขปัญหาการเชื่อมต่อการชำระเงิน",
+    troubleshootDesc: "หากคุณตั้งค่าการเรียกเก็บเงินแล้วแต่ปุ่มยังใช้งานไม่ได้ ให้ทำตามขั้นตอนการตรวจสอบเหล่านี้:"
   }
 };
