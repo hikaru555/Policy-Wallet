@@ -12,22 +12,22 @@ export const cloudSyncService = {
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
+      console.warn('Sync Service: Bridge appears offline or unreachable.');
       return null;
     }
   },
 
-  // Fetches a public snapshot of a user's portfolio for guest view access
   async getPublicView(viewId: string): Promise<{ policies: Policy[], profile: UserProfile } | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/portfolio/${viewId}`);
       if (!response.ok) return null;
       const data = await response.json();
-      // Ensure both policies and profile exist before returning to match expected types in App.tsx
       if (data && data.policies && data.profile) {
         return data as { policies: Policy[]; profile: UserProfile };
       }
       return null;
     } catch (error) {
+      console.warn('Sync Service: Guest view unavailable.');
       return null;
     }
   },
@@ -64,7 +64,6 @@ export const cloudSyncService = {
     }
   },
 
-  // Binary file upload to GCS Bucket
   async uploadFile(userId: string, file: File): Promise<{ url: string, name: string, mimeType: string } | null> {
     try {
       const formData = new FormData();
@@ -84,12 +83,10 @@ export const cloudSyncService = {
     }
   },
 
-  // Delete from GCS Bucket
   async deleteFile(userId: string, fileUrl: string): Promise<boolean> {
     try {
-      // Extract path from URL: https://storage.googleapis.com/bucket/vault/userid/file
       const parts = fileUrl.split('storage.googleapis.com/')[1].split('/');
-      const fileName = parts.slice(1).join('/'); // Skip bucket name
+      const fileName = parts.slice(1).join('/');
 
       const response = await fetch(`${API_BASE_URL}/vault/delete`, {
         method: 'DELETE',
