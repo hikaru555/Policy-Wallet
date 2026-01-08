@@ -7,6 +7,7 @@ import { Language } from "../translations";
  * Analyzes insurance coverage gaps using gemini-3-pro-preview for complex reasoning.
  */
 export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfile, lang: Language): Promise<GapAnalysisResult> => {
+  // Always create a fresh instance to get the latest process.env.API_KEY
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const policySummary = policies.map(p => {
@@ -85,8 +86,23 @@ export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfi
     });
 
     return JSON.parse(response.text.trim());
-  } catch (error) {
-    console.error("Failed to parse Gemini response or API error", error);
+  } catch (error: any) {
+    console.error("AI analysis failed", error);
+    
+    // Check for "Requested entity was not found" error globally in service calls
+    if (error?.message?.includes("Requested entity was not found")) {
+      // Re-trigger auth if possible or return a specific message
+      return {
+        score: 0,
+        gaps: [{ 
+          category: lang === 'en' ? "Auth Expired" : "การยืนยันตัวตนหมดอายุ", 
+          description: lang === 'en' ? "Your Google Cloud project connection has expired or is invalid. Please sign out and sign in again to re-select your key." : "การเชื่อมต่อโปรเจกต์ Google Cloud หมดอายุหรือเลือกไม่ถูกต้อง โปรดออกจากระบบและเข้าใหม่เพื่อเลือกคีย์อีกครั้ง", 
+          priority: "High" 
+        }],
+        recommendations: [lang === 'en' ? "Refresh your session by logging out and back in." : "รีเฟรชเซสชันของคุณโดยการออกจากระบบและเข้าสู่ระบบใหม่"]
+      };
+    }
+
     return {
       score: 0,
       gaps: [{ 

@@ -14,7 +14,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
 
-  const simulateLogin = (email: string, name: string, picture: string, isNew: boolean = false) => {
+  const simulateLogin = (email: string, name: string, picture: string) => {
     let role: UserRole = 'Member';
     if (email === 'phattararak@gmail.com') {
       role = 'Admin';
@@ -35,35 +35,48 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
     setIsLoading(true);
     setError(null);
     
-    try {
-      const aistudio = (window as any).aistudio;
-      if (!aistudio) {
-        throw new Error("AI Studio environment not detected.");
-      }
+    const aistudio = (window as any).aistudio;
+    
+    // Check if we are in the correct environment
+    if (!aistudio) {
+      setError(lang === 'en' 
+        ? "AI Studio environment not detected. Use the simulation buttons below for local development." 
+        : "ไม่พบสภาพแวดล้อม AI Studio โปรดใช้ปุ่มจำลองด้านล่างสำหรับการทดสอบ");
+      setIsLoading(false);
+      return;
+    }
 
-      // Check for existing key selection
+    try {
+      // 1. Check if user has already selected a key
       const hasKey = await aistudio.hasSelectedApiKey();
       
       if (!hasKey) {
-        // Trigger key selection. 
-        // Guideline: MUST assume selection was successful after triggering and proceed.
-        aistudio.openSelectKey();
+        // 2. Open the select key dialog (which acts as Sign in with Google)
+        await aistudio.openSelectKey();
       }
 
-      // Proceed immediately or after a very short delay as per "Assume Success" rule
-      setTimeout(() => {
-        simulateLogin(
-          isSignUp ? 'new-user@gmail.com' : 'authenticated-user@gmail.com', 
-          isSignUp ? 'New Member' : 'Google Cloud User', 
-          `https://ui-avatars.com/api/?name=${isSignUp ? 'New+Member' : 'Google+User'}&background=${isSignUp ? '34A853' : '4285F4'}&color=fff`,
-          isSignUp
-        );
-        setIsLoading(false);
-      }, 1000);
+      // 3. Race condition mitigation: Assume success and proceed to the app immediately
+      // Do not wait or check hasSelectedApiKey again here as it might not update instantly.
+      simulateLogin(
+        isSignUp ? 'new-user@gmail.com' : 'authenticated-user@gmail.com', 
+        isSignUp ? 'New Member' : 'Google Cloud User', 
+        `https://ui-avatars.com/api/?name=${isSignUp ? 'New+Member' : 'Google+User'}&background=${isSignUp ? '34A853' : '4285F4'}&color=fff`
+      );
       
     } catch (err: any) {
       console.error("Auth Error:", err);
-      setError(lang === 'en' ? "Auth system unavailable. Use developer buttons." : "ระบบขัดข้อง โปรดใช้ปุ่มสำหรับผู้พัฒนา");
+      
+      // 4. Handle specific GCP error mentioned in guidelines
+      if (err?.message?.includes("Requested entity was not found.")) {
+        setError(lang === 'en' 
+          ? "Selected project not found or billing not enabled. Please select again." 
+          : "ไม่พบโปรเจกต์ที่เลือกหรือยังไม่ได้เปิดใช้งานการชำระเงิน โปรดเลือกอีกครั้ง");
+        await aistudio.openSelectKey();
+      } else {
+        setError(lang === 'en' 
+          ? "Authentication failed. Please check your internet and try again." 
+          : "การยืนยันตัวตนล้มเหลว โปรดตรวจสอบอินเทอร์เน็ตและลองอีกครั้ง");
+      }
       setIsLoading(false);
     }
   };
@@ -92,7 +105,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
                 </div>
               </div>
               <p className="text-sm font-bold text-slate-800 animate-pulse">
-                {lang === 'en' ? 'Syncing your profile...' : 'กำลังซิงค์ข้อมูล...'}
+                {lang === 'en' ? 'Opening Secure Portal...' : 'กำลังเปิดระบบรักษาความปลอดภัย...'}
               </p>
             </div>
           )}
@@ -130,7 +143,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-bold mb-6 animate-in slide-in-from-top-2">
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-xs text-rose-600 font-bold mb-6 animate-in slide-in-from-top-2">
                 {error}
               </div>
             )}

@@ -2,6 +2,7 @@
   "name": "Policy Wallet",
   "description": "A comprehensive insurance management dashboard for agents and clients to track multiple policies, analyze coverage gaps, and manage premium renewals.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }
