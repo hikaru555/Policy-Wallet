@@ -39,6 +39,7 @@ const App: React.FC = () => {
   // State managed via persistence logic
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [protectionScore, setProtectionScore] = useState<number | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile' | 'admin'>('overview');
@@ -59,9 +60,11 @@ const App: React.FC = () => {
     // Database load (Local Database)
     const savedPolicies = localStorage.getItem('pw_policies');
     const savedProfile = localStorage.getItem('pw_profile');
+    const savedScore = localStorage.getItem('pw_protection_score');
     
     if (savedPolicies) setPolicies(JSON.parse(savedPolicies));
     if (savedProfile) setProfile(JSON.parse(savedProfile));
+    if (savedScore) setProtectionScore(Number(savedScore));
     
     setDataLoaded(true);
   }, []);
@@ -78,6 +81,12 @@ const App: React.FC = () => {
       localStorage.setItem('pw_profile', JSON.stringify(profile));
     }
   }, [profile, dataLoaded]);
+
+  useEffect(() => {
+    if (dataLoaded && protectionScore !== null) {
+      localStorage.setItem('pw_protection_score', protectionScore.toString());
+    }
+  }, [protectionScore, dataLoaded]);
 
   const handleLogin = (newUser: User) => {
     setUser(newUser);
@@ -156,6 +165,12 @@ const App: React.FC = () => {
   }
 
   const isPro = user.role === 'Pro-Member' || user.role === 'Admin';
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-emerald-500';
+    if (score >= 50) return 'bg-amber-500';
+    return 'bg-rose-500';
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
@@ -335,13 +350,17 @@ const App: React.FC = () => {
                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
                         <div className="flex items-center justify-between mb-6">
                           <h5 className="font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">{t.healthIndex}</h5>
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <div className={`w-2 h-2 rounded-full ${protectionScore !== null ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
                         </div>
                         
                         <div className="flex items-end justify-between mb-4">
                           <div>
-                            <p className="text-4xl font-black text-slate-900 tabular-nums">--%</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Pending Analysis</p>
+                            <p className="text-4xl font-black text-slate-900 tabular-nums">
+                              {protectionScore !== null ? `${protectionScore}%` : '--%'}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">
+                              {protectionScore !== null ? 'AI Evaluated' : 'Pending Analysis'}
+                            </p>
                           </div>
                           <div className="text-right">
                             <span className="text-2xl">🛡️</span>
@@ -354,7 +373,10 @@ const App: React.FC = () => {
                             <span>EXCELLENT</span>
                           </div>
                           <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex p-0.5">
-                            <div className="h-full bg-slate-200 rounded-full" style={{ width: '0%' }}></div>
+                            <div 
+                              className={`h-full rounded-full transition-all duration-1000 ${protectionScore !== null ? getScoreColor(protectionScore) : 'bg-slate-200'}`} 
+                              style={{ width: `${protectionScore !== null ? protectionScore : 0}%` }}
+                            ></div>
                           </div>
                         </div>
                         
@@ -362,7 +384,7 @@ const App: React.FC = () => {
                           onClick={() => setActiveTab('analysis')}
                           className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100 transition-all active:scale-95"
                         >
-                          View AI Breakdown →
+                          {protectionScore !== null ? 'Re-run Analysis →' : 'View AI Breakdown →'}
                         </button>
                      </div>
                   </div>
@@ -403,7 +425,12 @@ const App: React.FC = () => {
         {activeTab === 'analysis' && (
           <div className="animate-in fade-in duration-500">
             {profile ? (
-              <GapAnalysisView policies={policies} profile={profile} lang={lang} />
+              <GapAnalysisView 
+                policies={policies} 
+                profile={profile} 
+                lang={lang} 
+                onAnalysisComplete={(score) => setProtectionScore(score)}
+              />
             ) : (
               <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
                 <span className="text-5xl block mb-4">👤</span>

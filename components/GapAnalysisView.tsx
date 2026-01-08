@@ -8,9 +8,10 @@ interface GapAnalysisViewProps {
   policies: Policy[];
   profile: UserProfile;
   lang: Language;
+  onAnalysisComplete?: (score: number) => void;
 }
 
-const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, lang }) => {
+const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, lang, onAnalysisComplete }) => {
   const t = translations[lang];
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GapAnalysisResult | null>(null);
@@ -20,6 +21,9 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
     try {
       const res = await analyzeCoverageGaps(policies, profile, lang);
       setResult(res);
+      if (onAnalysisComplete && res.score !== undefined) {
+        onAnalysisComplete(res.score);
+      }
     } catch (e) {
       alert("Failed to run analysis.");
     } finally {
