@@ -153,7 +153,19 @@ export const translations = {
     troubleshootDesc: "If you've set up billing but the button is still disabled, follow these verification steps:",
     syncCalendar: "Sync to Calendar",
     calendarDesc: "Export all active renewal dates to your Google or Apple Calendar.",
-    calendarSuccess: "Calendar file (.ics) generated. Open it to sync events."
+    calendarSuccess: "Calendar file (.ics) generated. Open it to sync events.",
+    dataManagement: "Data Management",
+    exportData: "Export Portfolio",
+    importData: "Import Portfolio",
+    syncStatus: "Sync Status",
+    localStorage: "Local Device Only",
+    cloudSync: "Cloud Sync (SQL)",
+    importSuccess: "Portfolio imported successfully!",
+    importError: "Invalid file format. Please upload a valid Policy Wallet export.",
+    sqlStatus: "Cloud SQL (PostgreSQL)",
+    bucketStatus: "Cloud Storage Bucket",
+    connected: "Connected",
+    disconnected: "Disconnected"
   },
   th: {
     appName: "Policy Wallet",
@@ -305,6 +317,18 @@ export const translations = {
     troubleshootDesc: "หากคุณตั้งค่าการเรียกเก็บเงินแล้วแต่ปุ่มยังใช้งานไม่ได้ ให้ทำตามขั้นตอนการตรวจสอบเหล่านี้:",
     syncCalendar: "ซิงค์เข้าปฏิทิน",
     calendarDesc: "ส่งออกรายการต่ออายุกรมธรรม์ไปยัง Google หรือ Apple Calendar ของคุณ",
-    calendarSuccess: "สร้างไฟล์ปฏิทิน (.ics) สำเร็จแล้ว กรุณาเปิดไฟล์เพื่อเริ่มการซิงค์"
+    calendarSuccess: "สร้างไฟล์ปฏิทิน (.ics) สำเร็จแล้ว กรุณาเปิดไฟล์เพื่อเริ่มการซิงค์",
+    dataManagement: "การจัดการข้อมูล",
+    exportData: "ส่งออกข้อมูลพอร์ต",
+    importData: "นำเข้าข้อมูลพอร์ต",
+    syncStatus: "สถานะการซิงค์",
+    localStorage: "บันทึกในเครื่องนี้เท่านั้น",
+    cloudSync: "ซิงค์ผ่าน SQL Cloud",
+    importSuccess: "นำเข้าข้อมูลพอร์ตสำเร็จแล้ว!",
+    importError: "รูปแบบไฟล์ไม่ถูกต้อง โปรดใช้ไฟล์ที่ส่งออกโดย Policy Wallet",
+    sqlStatus: "Cloud SQL (PostgreSQL)",
+    bucketStatus: "Cloud Storage Bucket",
+    connected: "เชื่อมต่อแล้ว",
+    disconnected: "ไม่ได้เชื่อมต่อ"
   }
 };

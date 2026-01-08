@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument, User, UserRole } from './types';
 import { translations, Language } from './translations';
+import { cloudSyncService } from './services/cloudSyncService';
 import Dashboard from './components/Dashboard';
 import PolicyList from './components/PolicyList';
 import GapAnalysisView from './components/GapAnalysisView';
@@ -16,9 +17,6 @@ import TaxOptimizationView from './components/TaxOptimizationView';
 import LoginView from './components/LoginView';
 import AdminConsole from './components/AdminConsole';
 
-const PATRICK_PHOTO = "https://lh3.googleusercontent.com/d/1Xy6R6oK3_R6Q6n6_W_U_N_E_F_I_L_E_S_P_R_O_V_I_D_E_D_U_R_L"; // Note: Actual base64/URL will be used based on the attachment provided in prompt. For now, referencing a high-res professional placeholder which I will simulate as a data URI for the final output.
-
-// Using the attached image content as a constant (simulated here for clarity)
 const AGENT_PHOTO_URL = "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=256&h=256&auto=format&fit=crop"; 
 
 const AppLogo = () => (
@@ -46,6 +44,7 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [protectionScore, setProtectionScore] = useState<number | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [isCloudSynced, setIsCloudSynced] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile' | 'admin'>('overview');
   const [isAddingPolicy, setIsAddingPolicy] = useState(false);
@@ -54,38 +53,61 @@ const App: React.FC = () => {
   const [policyIdToDelete, setPolicyIdToDelete] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // Initial Data Load
+  // 1. Initial Data Load (Prioritize Cloud SQL then fall back to Local)
   useEffect(() => {
-    // Session load
-    const savedUser = localStorage.getItem('pw_session');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    const initData = async () => {
+      // Session load
+      const savedUser = localStorage.getItem('pw_session');
+      let currentUser: User | null = null;
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        setUser(currentUser);
+      }
 
-    // Database load (Local Database)
-    const savedPolicies = localStorage.getItem('pw_policies');
-    const savedProfile = localStorage.getItem('pw_profile');
-    const savedScore = localStorage.getItem('pw_protection_score');
-    
-    if (savedPolicies) setPolicies(JSON.parse(savedPolicies));
-    if (savedProfile) setProfile(JSON.parse(savedProfile));
-    if (savedScore) setProtectionScore(Number(savedScore));
-    
-    setDataLoaded(true);
+      // Database load
+      const savedPolicies = localStorage.getItem('pw_policies');
+      const savedProfile = localStorage.getItem('pw_profile');
+      const savedScore = localStorage.getItem('pw_protection_score');
+      
+      if (savedPolicies) setPolicies(JSON.parse(savedPolicies));
+      if (savedProfile) setProfile(JSON.parse(savedProfile));
+      if (savedScore) setProtectionScore(Number(savedScore));
+
+      // Attempt Cloud Sync if user is logged in
+      if (currentUser) {
+        const cloudPolicies = await cloudSyncService.getPolicies(currentUser.id);
+        if (cloudPolicies) {
+          setPolicies(cloudPolicies);
+          setIsCloudSynced(true);
+        }
+      }
+      
+      setDataLoaded(true);
+    };
+
+    initData();
   }, []);
 
-  // Database Auto-Save
+  // 2. Cloud Auto-Save (Syncs to PostgreSQL)
   useEffect(() => {
-    if (dataLoaded) {
+    if (dataLoaded && user && policies.length > 0) {
+      cloudSyncService.savePolicies(user.id, policies).then(success => {
+        setIsCloudSynced(success);
+        localStorage.setItem('pw_policies', JSON.stringify(policies));
+      });
+    } else if (dataLoaded) {
       localStorage.setItem('pw_policies', JSON.stringify(policies));
     }
-  }, [policies, dataLoaded]);
+  }, [policies, dataLoaded, user]);
 
   useEffect(() => {
-    if (dataLoaded && profile) {
+    if (dataLoaded && profile && user) {
+      cloudSyncService.saveProfile(user.id, profile);
+      localStorage.setItem('pw_profile', JSON.stringify(profile));
+    } else if (dataLoaded && profile) {
       localStorage.setItem('pw_profile', JSON.stringify(profile));
     }
-  }, [profile, dataLoaded]);
+  }, [profile, dataLoaded, user]);
 
   useEffect(() => {
     if (dataLoaded && protectionScore !== null) {
@@ -102,6 +124,7 @@ const App: React.FC = () => {
     setUser(null);
     localStorage.removeItem('pw_session');
     setActiveTab('overview');
+    setIsCloudSynced(false);
   };
 
   const handleDeletePolicy = (id: string) => {
@@ -137,7 +160,15 @@ const App: React.FC = () => {
     setEditingPolicy(null);
   };
 
-  const handleUploadDocument = (policyId: string, doc: PolicyDocument) => {
+  const handleImportPortfolio = (data: { profile: UserProfile, policies: Policy[] }) => {
+    setProfile(data.profile);
+    setPolicies(data.policies);
+    setProtectionScore(null); // Reset score to force re-analysis
+  };
+
+  const handleUploadDocument = async (policyId: string, doc: PolicyDocument) => {
+    // If it's a real file, we would use cloudSyncService.uploadToBucket
+    // For now we simulate the integration
     setPolicies(prev => prev.map(p => {
       if (p.id === policyId) {
         return {
@@ -260,6 +291,15 @@ const App: React.FC = () => {
           )}
 
           <div className="pt-4 mt-4 border-t border-slate-100">
+            <div className={`px-4 py-3 rounded-xl border transition-all mb-2 ${isCloudSynced ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.syncStatus}</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${isCloudSynced ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+              </div>
+              <p className={`text-[10px] font-black uppercase tracking-tighter ${isCloudSynced ? 'text-emerald-700' : 'text-slate-600'}`}>
+                {isCloudSynced ? t.cloudSync : t.localStorage}
+              </p>
+            </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-500 hover:bg-rose-50 transition-all duration-200"
@@ -477,6 +517,8 @@ const App: React.FC = () => {
               }} 
               onSave={setProfile} 
               lang={lang} 
+              policies={policies}
+              onImport={handleImportPortfolio}
             />
           </div>
         )}
