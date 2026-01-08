@@ -19,8 +19,8 @@ import AdminConsole from './components/AdminConsole';
 
 const AGENT_PHOTO_URL = "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=256&h=256&auto=format&fit=crop"; 
 
-const AppLogo = () => (
-  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shadow-lg rounded-xl flex-shrink-0">
+const AppLogo = ({ className = "" }: { className?: string }) => (
+  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shadow-lg rounded-xl flex-shrink-0 ${className}`}>
     <rect width="40" height="40" rx="12" fill="url(#logo_gradient)" />
     <path d="M20 10C20 10 12 13 12 19V25C12 28 16 31 20 32C24 31 28 28 28 25V19C28 13 20 10 20 10Z" fill="white" fillOpacity="0.2" />
     <path fillRule="evenodd" clipRule="evenodd" d="M16 18H24V26C24 26.5523 23.5523 27 23 27H17C16.4477 27 16 26.5523 16 26V18ZM18 20V25H22V20H18Z" fill="white" />
@@ -38,6 +38,9 @@ const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [user, setUser] = useState<User | null>(null);
   const t = translations[lang];
+
+  // Sidebar State for Mobile
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // State managed via persistence logic
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -125,6 +128,7 @@ const App: React.FC = () => {
     localStorage.removeItem('pw_session');
     setActiveTab('overview');
     setIsCloudSynced(false);
+    setIsMobileMenuOpen(false);
   };
 
   const handleDeletePolicy = (id: string) => {
@@ -152,12 +156,14 @@ const App: React.FC = () => {
     setActiveTab('policies');
     setEditingPolicy(policy);
     setIsAddingPolicy(false);
+    setIsMobileMenuOpen(false);
   };
 
   const toggleAddingPolicy = () => {
     setActiveTab('policies');
     setIsAddingPolicy(!isAddingPolicy);
     setEditingPolicy(null);
+    setIsMobileMenuOpen(false);
   };
 
   const handleImportPortfolio = (data: { profile: UserProfile, policies: Policy[] }) => {
@@ -167,8 +173,6 @@ const App: React.FC = () => {
   };
 
   const handleUploadDocument = async (policyId: string, doc: PolicyDocument) => {
-    // If it's a real file, we would use cloudSyncService.uploadToBucket
-    // For now we simulate the integration
     setPolicies(prev => prev.map(p => {
       if (p.id === policyId) {
         return {
@@ -196,6 +200,13 @@ const App: React.FC = () => {
     window.open('https://line.me/ti/p/@patrickfwd', '_blank');
   };
 
+  const handleTabChange = (tab: any) => {
+    setActiveTab(tab);
+    setIsAddingPolicy(false);
+    setEditingPolicy(null);
+    setIsMobileMenuOpen(false);
+  };
+
   if (!user) {
     return <LoginView onLogin={handleLogin} lang={lang} />;
   }
@@ -210,19 +221,57 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col p-4 space-y-6">
+      {/* Mobile Top Bar */}
+      <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center space-x-3">
+          <AppLogo className="w-8 h-8" />
+          <h1 className="text-lg font-bold tracking-tight text-slate-800">{t.appName}</h1>
+        </div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 md:hidden animate-in fade-in duration-300" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar / Navigation Drawer */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-[60] w-72 bg-white border-r border-slate-200 flex flex-col p-4 space-y-6 
+        transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-64 md:z-auto
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center space-x-3">
             <AppLogo />
             <h1 className="text-xl font-bold tracking-tight text-slate-800">{t.appName}</h1>
           </div>
-          <button 
-            onClick={() => setLang(lang === 'en' ? 'th' : 'en')}
-            className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 uppercase tracking-widest text-slate-600 transition-colors"
-          >
-            {lang === 'en' ? 'TH' : 'EN'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setLang(lang === 'en' ? 'th' : 'en')}
+              className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 uppercase tracking-widest text-slate-600 transition-colors"
+            >
+              {lang === 'en' ? 'TH' : 'EN'}
+            </button>
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="md:hidden p-1 text-slate-400 hover:text-slate-600"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="px-2">
@@ -254,7 +303,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
           {[
             { id: 'overview', label: t.overview, icon: '📊' },
             { id: 'policies', label: t.policies, icon: '📄' },
@@ -265,7 +314,7 @@ const App: React.FC = () => {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id as any); setIsAddingPolicy(false); setEditingPolicy(null); }}
+              onClick={() => handleTabChange(tab.id as any)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 activeTab === tab.id ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
               }`}
@@ -278,7 +327,7 @@ const App: React.FC = () => {
           ))}
           {user.role === 'Admin' && (
             <button
-              onClick={() => setActiveTab('admin')}
+              onClick={() => handleTabChange('admin')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 activeTab === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-800'
               }`}
@@ -300,15 +349,6 @@ const App: React.FC = () => {
                 {isCloudSynced ? t.cloudSync : t.localStorage}
               </p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-500 hover:bg-rose-50 transition-all duration-200"
-            >
-              <span className="flex items-center gap-3">
-                <span className="text-lg">🚪</span>
-                <span>{t.logout}</span>
-              </span>
-            </button>
           </div>
         </nav>
 
@@ -337,7 +377,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-10 space-y-8 overflow-y-auto">
+      <main className="flex-1 p-4 md:p-10 space-y-8 overflow-y-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 capitalize tracking-tight">
@@ -426,7 +466,7 @@ const App: React.FC = () => {
                         </div>
                         
                         <button 
-                          onClick={() => setActiveTab('analysis')}
+                          onClick={() => handleTabChange('analysis')}
                           className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100 transition-all active:scale-95"
                         >
                           {protectionScore !== null ? 'Re-run Analysis →' : 'View AI Breakdown →'}
@@ -481,7 +521,7 @@ const App: React.FC = () => {
                 <span className="text-5xl block mb-4">👤</span>
                 <h3 className="text-xl font-bold text-slate-800 mb-2">Complete Your Profile</h3>
                 <p className="text-slate-500 max-w-xs mx-auto mb-8 text-sm">We need your age, income, and family context to perform an accurate protection gap analysis.</p>
-                <button onClick={() => setActiveTab('profile')} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100">Setup Profile Now</button>
+                <button onClick={() => handleTabChange('profile')} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100">Setup Profile Now</button>
               </div>
             )}
           </div>
@@ -496,7 +536,7 @@ const App: React.FC = () => {
                 <span className="text-5xl block mb-4">💰</span>
                 <h3 className="text-xl font-bold text-slate-800 mb-2">Tax Planning Restricted</h3>
                 <p className="text-slate-500 max-w-xs mx-auto mb-8 text-sm">Please update your annual income in the Profile tab to calculate your potential tax savings.</p>
-                <button onClick={() => setActiveTab('profile')} className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-100">Enter Income Details</button>
+                <button onClick={() => handleTabChange('profile')} className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-100">Enter Income Details</button>
               </div>
             )}
           </div>
