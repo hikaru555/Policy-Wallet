@@ -12,7 +12,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// 1. Production Environment Detection
+// 1. Production-Grade Configuration
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.K_SERVICE;
 const CLOUD_SQL_CONNECTION_NAME = process.env.CLOUD_SQL_CONNECTION_NAME || 'gen-lang-client-0928682283:us-central1:tiered-web-app-db-bbbd';
 const BUCKET_NAME = 'policywallet';
@@ -21,31 +21,35 @@ const dbConfig = {
   user: 'policywallet',
   password: '.E9iAtlC[I5;g&<3',
   database: 'policywallet',
-  // Use Unix socket in production, localhost in dev (for Cloud SQL Auth Proxy)
   host: isProduction ? `/cloudsql/${CLOUD_SQL_CONNECTION_NAME}` : 'localhost',
   port: 5432,
-  connectionTimeoutMillis: 5000, 
-  idleTimeoutMillis: 30000,
-  max: 10, 
+  connectionTimeoutMillis: 2000, // Short timeout to fail fast
+  max: 10,
 };
 
 let pool;
+let dbStatus = 'initializing';
+let dbErrorMessage = '';
+
+// Create pool immediately
 try {
   pool = new Pool(dbConfig);
   pool.on('error', (err) => {
     console.error('DATABASE POOL ERROR:', err.message);
+    dbStatus = 'error';
+    dbErrorMessage = err.message;
   });
 } catch (e) {
-  console.error('CRITICAL: Pool initialization failed:', e.message);
+  dbStatus = 'config_error';
+  dbErrorMessage = e.message;
 }
 
 const storage = new Storage();
 const bucket = storage.bucket(BUCKET_NAME);
 
-// 2. Database Schema Initialization (Non-blocking)
+// 2. Background Database Initialization
 const initDb = async () => {
   if (!pool) return;
-  console.log('⏳ Attempting to verify database schema...');
   try {
     const client = await pool.connect();
     await client.query(`
@@ -57,69 +61,60 @@ const initDb = async () => {
       )
     `);
     client.release();
-    console.log('✅ PostgreSQL Schema Verified and Ready');
+    dbStatus = 'connected';
+    console.log('✅ PostgreSQL Ready');
   } catch (err) {
-    console.warn('⚠️ Database not ready yet (will retry on next request):', err.message);
-    console.log('💡 Tip: If in Cloud Run, ensure the Cloud SQL Auth Proxy is enabled for: ' + CLOUD_SQL_CONNECTION_NAME);
+    dbStatus = 'error';
+    dbErrorMessage = err.message;
+    console.warn('⚠️ DB Connection Failed:', err.message);
   }
 };
 
-// --- API ENDPOINTS ---
+// --- API ENDPOINTS (Optimized for speed) ---
 
 app.get('/api/ping', (req, res) => {
-  res.json({ 
-    status: 'pong', 
-    env: isProduction ? 'production' : 'development',
-    time: new Date().toISOString()
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: Date.now()
   });
 });
 
 app.get('/api/admin/health', async (req, res) => {
-  const health = {
-    status: 'online',
-    database: 'checking',
-    storage: 'checking',
-    env: isProduction ? 'production' : 'development',
-    sqlProxy: CLOUD_SQL_CONNECTION_NAME
-  };
-
-  if (pool) {
-    try {
-      const client = await pool.connect();
-      await client.query('SELECT 1');
-      client.release();
-      health.database = 'connected';
-    } catch (err) {
-      health.database = 'error';
-      health.dbError = err.message;
-    }
-  }
-
+  // Check storage status quickly
+  let storageStatus = 'checking';
   try {
     const [exists] = await bucket.exists();
-    health.storage = exists ? 'connected' : 'not_found';
-  } catch (err) {
-    health.storage = 'error';
-    health.storageError = err.message;
+    storageStatus = exists ? 'connected' : 'bucket_not_found';
+  } catch (e) {
+    storageStatus = 'error';
   }
 
-  res.json(health);
+  res.json({
+    status: 'online',
+    database: dbStatus,
+    dbError: dbErrorMessage,
+    storage: storageStatus,
+    env: isProduction ? 'production' : 'development',
+    sqlProxy: CLOUD_SQL_CONNECTION_NAME,
+    bucket: BUCKET_NAME,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Portfolio Persistence
 app.get('/api/portfolio/:userId', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'DB Pool Down' });
+  if (dbStatus !== 'connected') return res.status(503).json({ error: 'Database offline' });
   try {
     const result = await pool.query('SELECT policies, profile FROM users WHERE id = $1', [req.params.userId]);
     res.json(result.rows[0] || { policies: [], profile: null });
   } catch (err) {
-    res.status(500).json({ error: 'Database error: ' + err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/policies/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
-  if (!userId || !pool) return res.status(400).json({ error: 'Missing context' });
+  if (!userId || dbStatus !== 'connected') return res.status(400).json({ error: 'Context unavailable' });
   try {
     await pool.query(`
       INSERT INTO users (id, policies, last_sync) 
@@ -134,7 +129,7 @@ app.post('/api/policies/sync', async (req, res) => {
 
 app.post('/api/profile/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
-  if (!userId || !pool) return res.status(400).json({ error: 'Missing context' });
+  if (!userId || dbStatus !== 'connected') return res.status(400).json({ error: 'Context unavailable' });
   try {
     await pool.query(`
       INSERT INTO users (id, profile, last_sync) 
@@ -152,18 +147,10 @@ app.post('/api/vault/upload', upload.single('file'), async (req, res) => {
   if (!userId || !req.file) return res.status(400).json({ error: 'Upload failed' });
   try {
     const blob = bucket.file(`vault/${userId}/${Date.now()}-${req.file.originalname}`);
-    const blobStream = blob.createWriteStream({
-      resumable: false,
-      contentType: req.file.mimetype,
-      public: true, 
-    });
+    const blobStream = blob.createWriteStream({ resumable: false, contentType: req.file.mimetype, public: true });
     blobStream.on('error', (err) => res.status(500).json({ error: err.message }));
     blobStream.on('finish', () => {
-      res.json({ 
-        url: `https://storage.googleapis.com/${BUCKET_NAME}/${blob.name}`, 
-        name: req.file.originalname, 
-        mimeType: req.file.mimetype 
-      });
+      res.json({ url: `https://storage.googleapis.com/${BUCKET_NAME}/${blob.name}`, name: req.file.originalname, mimeType: req.file.mimetype });
     });
     blobStream.end(req.file.buffer);
   } catch (err) {
@@ -191,10 +178,7 @@ app.get('*', (req, res, next) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 Policy Wallet Bridge API listening on port ${PORT}`);
-  console.log(`🌍 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  console.log(`📦 Cloud SQL Auth Proxy Targeted: ${CLOUD_SQL_CONNECTION_NAME}\n`);
-  
-  // Initialize DB connection AFTER server is listening
+  console.log(`\n🚀 Bridge API online at port ${PORT}`);
+  // Start DB check after server is already responding to pings
   initDb();
 });
