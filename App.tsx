@@ -445,7 +445,7 @@ const App: React.FC = () => {
         {activeTab === 'tax' && (
           <div className="animate-in fade-in duration-500">
             {profile ? (
-              <TaxOptimizationView policies={policies} profile={profile} lang={lang} />
+              <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} />
             ) : (
               <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
                 <span className="text-5xl block mb-4">💰</span>

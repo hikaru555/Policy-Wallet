@@ -8,11 +8,13 @@ interface TaxOptimizationViewProps {
   policies: Policy[];
   profile: UserProfile;
   lang: Language;
+  isPro: boolean;
 }
 
-const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, profile, lang }) => {
+const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, profile, lang, isPro }) => {
   const t = translations[lang];
   const [loading, setLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [aiResult, setAiResult] = useState<{
     advice: string[];
     suggestedProducts: string[];
@@ -78,6 +80,10 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
   }, [policies, profile]);
 
   const handleRunAiTax = async () => {
+    if (!isPro) {
+      setShowUpgradeModal(true);
+      return;
+    }
     setLoading(true);
     try {
       const result = await analyzeTaxOptimization(policies, profile, lang);
@@ -104,9 +110,17 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
           <button 
             onClick={handleRunAiTax}
             disabled={loading}
-            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-indigo-100 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+            className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 
+              ${!isPro 
+                ? 'bg-slate-800 hover:bg-slate-900 text-slate-300 shadow-slate-200' 
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'}`}
           >
             {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+            {!isPro && !loading && (
+              <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            )}
             {t.optimizeNow}
           </button>
         </div>
@@ -163,7 +177,7 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
           </div>
         </div>
 
-        {aiResult && (
+        {aiResult && isPro && (
           <div className="mt-12 space-y-8 animate-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
               <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-xl shadow-lg shadow-indigo-200 text-white">🤖</div>
@@ -241,6 +255,43 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
           ))}
         </div>
       </div>
+
+      {/* PRO UPGRADE MODAL */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowUpgradeModal(false)} />
+          <div className="relative bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-center">
+             <div className="p-10">
+                <div className="w-20 h-20 bg-indigo-100 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner">
+                  🔒
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">{t.proFeature}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-8">
+                  {t.proDesc}
+                </p>
+                
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => { setShowUpgradeModal(false); alert('Redirecting to upgrade page...'); }}
+                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 transition-all active:scale-95"
+                  >
+                    {t.upgradeNow}
+                  </button>
+                  <button 
+                    onClick={() => setShowUpgradeModal(false)}
+                    className="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-2xl font-bold text-sm transition-colors"
+                  >
+                    {t.cancel}
+                  </button>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                  <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Powered by Google Gemini 3 Pro</p>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
