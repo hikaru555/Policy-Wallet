@@ -3,10 +3,9 @@ import { Policy, UserProfile } from '../types';
 
 /**
  * Service to interact with Cloud SQL (PostgreSQL) bridge
+ * Relative path /api is generally most reliable when served by the same proxy/server
  */
-const API_BASE_URL = window.location.origin.includes('localhost') 
-  ? 'http://localhost:8080/api' 
-  : '/api'; 
+const API_BASE_URL = '/api';
 
 export const cloudSyncService = {
   /**
@@ -20,7 +19,7 @@ export const cloudSyncService = {
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.warn('Cloud SQL Fetch failed - check network or server status');
+      console.warn('Cloud Sync Service: Fetch failed', error);
       return null;
     }
   },
@@ -40,7 +39,7 @@ export const cloudSyncService = {
       });
       return response.ok;
     } catch (error) {
-      console.error('Failed to sync policies', error);
+      console.error('Cloud Sync Service: Sync policies failed', error);
       return false;
     }
   },
@@ -60,7 +59,7 @@ export const cloudSyncService = {
       });
       return response.ok;
     } catch (error) {
-      console.error('Profile sync failed', error);
+      console.error('Cloud Sync Service: Profile sync failed', error);
       return false;
     }
   },
@@ -74,7 +73,7 @@ export const cloudSyncService = {
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.error('Public view fetch failed', error);
+      console.error('Cloud Sync Service: Public view fetch failed', error);
       return null;
     }
   }

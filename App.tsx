@@ -37,7 +37,10 @@ const AppLogo = ({ className = "", id = "main" }: { className?: string, id?: str
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('pw_session');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [guestData, setGuestData] = useState<{ policies: Policy[], profile: UserProfile } | null>(null);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   
@@ -56,7 +59,6 @@ const App: React.FC = () => {
   const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   
-  // Use ReturnType<typeof setTimeout> instead of NodeJS.Timeout to fix 'Cannot find namespace NodeJS' in browser environment
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile' | 'admin'>('overview');
@@ -67,8 +69,11 @@ const App: React.FC = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // 1. Initial Data Hydration & Cloud Migration
+  // Dependency [user?.id] ensures data refreshes whenever identity changes without full reload
   useEffect(() => {
     const initData = async () => {
+      setDataLoaded(false); // Reset loading state for new user
+      
       const params = new URLSearchParams(window.location.search);
       const viewId = params.get('view');
 
@@ -84,14 +89,6 @@ const App: React.FC = () => {
         setIsGuestLoading(false);
       }
 
-      // Session Management
-      const savedUser = localStorage.getItem('pw_session');
-      let currentUser: User | null = null;
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        setUser(currentUser);
-      }
-
       // Phase 1: Load Local Cache (Fast Path)
       const savedPolicies = localStorage.getItem('pw_policies');
       const savedProfile = localStorage.getItem('pw_profile');
@@ -100,25 +97,31 @@ const App: React.FC = () => {
       const localPolicies = savedPolicies ? JSON.parse(savedPolicies) : [];
       const localProfile = savedProfile ? JSON.parse(savedProfile) : null;
 
-      if (localPolicies.length > 0) setPolicies(localPolicies);
-      if (localProfile) setProfile(localProfile);
+      setPolicies(localPolicies);
+      setProfile(localProfile);
       if (savedScore) setProtectionScore(Number(savedScore));
 
       // Phase 2: Sync with Cloud SQL (Consistent Path)
-      if (currentUser) {
+      if (user) {
         setIsSyncing(true);
         try {
-          const cloudData = await cloudSyncService.getFullData(currentUser.id);
+          const cloudData = await cloudSyncService.getFullData(user.id);
           
           if (cloudData && (cloudData.policies?.length > 0 || cloudData.profile)) {
             // Cloud has data: Overwrite local with fresher cloud data
-            if (cloudData.policies) setPolicies(cloudData.policies);
-            if (cloudData.profile) setProfile(cloudData.profile);
+            if (cloudData.policies) {
+              setPolicies(cloudData.policies);
+              localStorage.setItem('pw_policies', JSON.stringify(cloudData.policies));
+            }
+            if (cloudData.profile) {
+              setProfile(cloudData.profile);
+              localStorage.setItem('pw_profile', JSON.stringify(cloudData.profile));
+            }
             setIsCloudSynced(true);
           } else if (localPolicies.length > 0 || localProfile) {
             // Cloud is empty but local has data: Perform Initial Migration
-            const pSuccess = await cloudSyncService.savePolicies(currentUser.id, localPolicies);
-            const prSuccess = localProfile ? await cloudSyncService.saveProfile(currentUser.id, localProfile) : true;
+            const pSuccess = await cloudSyncService.savePolicies(user.id, localPolicies);
+            const prSuccess = localProfile ? await cloudSyncService.saveProfile(user.id, localProfile) : true;
             setIsCloudSynced(pSuccess && prSuccess);
           }
         } catch (err) {
@@ -133,7 +136,7 @@ const App: React.FC = () => {
     };
 
     initData();
-  }, []);
+  }, [user?.id]);
 
   // 2. Debounced Automatic Sync (Save to Cloud + Local Storage)
   useEffect(() => {
@@ -155,18 +158,15 @@ const App: React.FC = () => {
           if (profile) prSuccess = await cloudSyncService.saveProfile(user.id, profile);
           
           setIsCloudSynced(pSuccess && prSuccess);
-          if (!(pSuccess && prSuccess)) {
-            console.warn("Cloud Sync unsuccessful - check backend connectivity.");
-          }
         } catch (err) {
           console.error("Critical Sync Failure:", err);
           setIsCloudSynced(false);
         } finally {
           setIsSyncing(false);
         }
-      }, 1000); // 1s debounce
+      }, 1000); 
     }
-  }, [policies, profile, user, dataLoaded]);
+  }, [policies, profile, user?.id, dataLoaded]);
 
   // Handle Protection Score persistence
   useEffect(() => {
@@ -176,20 +176,25 @@ const App: React.FC = () => {
   }, [protectionScore]);
 
   const handleLogin = (newUser: User) => {
-    setUser(newUser);
     localStorage.setItem('pw_session', JSON.stringify(newUser));
-    // Full refresh to trigger cloud fetch for the new user identity
-    window.location.reload(); 
+    setUser(newUser); 
+    // Data hydration is triggered by the useEffect dependency [user?.id]
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('pw_session');
-    // Clear state but keep local storage for anonymous usage if needed
+    // Clear local storage on logout to prevent cross-user leakage
+    localStorage.removeItem('pw_policies');
+    localStorage.removeItem('pw_profile');
+    localStorage.removeItem('pw_protection_score');
+    
+    setPolicies([]);
+    setProfile(null);
+    setProtectionScore(null);
     setActiveTab('overview');
     setIsCloudSynced(false);
     setIsMobileMenuOpen(false);
-    window.location.reload();
   };
 
   const handleDeletePolicy = (id: string) => {
@@ -448,7 +453,6 @@ const App: React.FC = () => {
       </aside>
 
       <main className="flex-1 p-4 md:p-10 space-y-8 overflow-y-auto">
-        {/* Header and Routing Logic (Simplified same as before) */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 capitalize tracking-tight">
@@ -482,7 +486,6 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Tab Content Rendering */}
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-in fade-in duration-500">
             {policies.length > 0 ? (
@@ -493,7 +496,6 @@ const App: React.FC = () => {
                     <PolicyList policies={policies} onDelete={handleDeletePolicy} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} />
                   </div>
                   <div className="space-y-6">
-                    {/* Secondary Cards (LINE, Protection Index) */}
                     <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white shadow-xl relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
                       <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform"></div>
                       <h5 className="font-bold text-lg mb-2 relative z-10">{t.lineSync}</h5>
@@ -502,7 +504,6 @@ const App: React.FC = () => {
                         {t.connectLine}
                       </button>
                     </div>
-                    {/* AI Score Placeholder/Card */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
                         <div className="flex items-center justify-between mb-6">
                           <h5 className="font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">{t.healthIndex}</h5>
@@ -552,7 +553,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Other Tab Routing */}
         {activeTab === 'analysis' && profile && (
           <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} />
         )}
@@ -576,7 +576,6 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Modals and Overlays */}
       <EmergencyContacts lang={lang} />
       <PolicyDetailsModal policy={viewingPolicy} onClose={() => setViewingPolicy(null)} onEdit={handleEditPolicy} lang={lang} />
       <ConfirmDialog isOpen={!!policyIdToDelete} title={lang === 'en' ? "Delete Policy" : "ลบกรมธรรม์"} message={t.confirmDelete} onConfirm={confirmDeletePolicy} onCancel={() => setPolicyIdToDelete(null)} lang={lang} />
