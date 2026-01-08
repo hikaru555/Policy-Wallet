@@ -3,6 +3,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const { Storage } = require('@google-cloud/storage');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
@@ -22,7 +23,7 @@ const dbConfig = {
   connectionTimeoutMillis: 5000, 
 };
 
-// Create pool conditionally to allow startup even if DB is misconfigured
+// Create pool conditionally
 let pool;
 try {
   pool = new Pool(dbConfig);
@@ -69,13 +70,11 @@ initDb();
 
 // --- API ENDPOINTS ---
 
-// Lightweight Ping (Always JSON)
 app.get('/api/ping', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.json({ status: 'pong', timestamp: new Date().toISOString() });
 });
 
-// Detailed System Health Check
 app.get('/api/admin/health', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   const health = {
@@ -97,14 +96,9 @@ app.get('/api/admin/health', async (req, res) => {
       health.database = 'error';
       health.dbError = err.message;
     }
-  } else {
-    health.database = 'not_configured';
   }
 
-  if (!storage) {
-    health.storage = 'client_not_initialized';
-    health.storageError = 'Storage client could not be created';
-  } else {
+  if (storage) {
     try {
       const [exists] = await storage.bucket(bucketName).exists();
       health.storage = exists ? 'connected' : 'bucket_not_found';
@@ -117,7 +111,6 @@ app.get('/api/admin/health', async (req, res) => {
   res.json(health);
 });
 
-// Get Combined Portfolio Data
 app.get('/api/portfolio/:userId', async (req, res) => {
   const { userId } = req.params;
   if (!pool) return res.status(503).json({ error: 'Database not available' });
@@ -128,62 +121,67 @@ app.get('/api/portfolio/:userId', async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Fetch Portfolio Error:', err.message);
     res.status(500).json({ error: 'Failed to fetch portfolio' });
   }
 });
 
-// Sync Policies
 app.post('/api/policies/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
   const { policies } = req.body;
-  if (!userId) return res.status(400).json({ error: 'User ID required' });
-  if (!pool) return res.status(503).json({ error: 'Database not available' });
-
+  if (!userId || !pool) return res.status(400).json({ error: 'Sync unavailable' });
   try {
-    const query = `
-      INSERT INTO users (id, policies, last_sync) 
-      VALUES ($1, $2, NOW()) 
-      ON CONFLICT (id) DO UPDATE SET 
-        policies = EXCLUDED.policies, 
-        last_sync = NOW()
-    `;
-    await pool.query(query, [userId, JSON.stringify(policies)]);
+    await pool.query(`
+      INSERT INTO users (id, policies, last_sync) VALUES ($1, $2, NOW()) 
+      ON CONFLICT (id) DO UPDATE SET policies = EXCLUDED.policies, last_sync = NOW()
+    `, [userId, JSON.stringify(policies)]);
     res.json({ success: true });
   } catch (err) {
-    console.error('SQL Sync Policies Error:', err.message);
-    res.status(500).json({ error: 'Database sync failed' });
+    res.status(500).json({ error: 'Sync failed' });
   }
 });
 
-// Sync Profile
 app.post('/api/profile/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
   const { profile } = req.body;
-  if (!userId) return res.status(400).json({ error: 'User ID required' });
-  if (!pool) return res.status(503).json({ error: 'Database not available' });
-
+  if (!userId || !pool) return res.status(400).json({ error: 'Sync unavailable' });
   try {
-    const query = `
-      INSERT INTO users (id, profile, last_sync) 
-      VALUES ($1, $2, NOW()) 
-      ON CONFLICT (id) DO UPDATE SET 
-        profile = EXCLUDED.profile, 
-        last_sync = NOW()
-    `;
-    await pool.query(query, [userId, JSON.stringify(profile)]);
+    await pool.query(`
+      INSERT INTO users (id, profile, last_sync) VALUES ($1, $2, NOW()) 
+      ON CONFLICT (id) DO UPDATE SET profile = EXCLUDED.profile, last_sync = NOW()
+    `, [userId, JSON.stringify(profile)]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Profile sync failed:', err.message);
-    res.status(500).json({ error: 'Profile sync failed' });
+    res.status(500).json({ error: 'Sync failed' });
   }
 });
 
-// Standard health check for Cloud Run
-app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/api/public/view/:userId', async (req, res) => {
+  const { userId } = req.params;
+  if (!pool) return res.status(503).json({ error: 'Database not available' });
+  try {
+    const result = await pool.query('SELECT policies, profile FROM users WHERE id = $1', [userId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Fetch failed' });
+  }
+});
+
+// --- STATIC FILE SERVING ---
+
+// Serve static files from the current directory
+app.use(express.static(__dirname));
+
+// For SPA: send index.html for all non-API routes
+app.get('*', (req, res, next) => {
+  // If the request is for an API endpoint that wasn't matched above, let it through to 404
+  if (req.path.startsWith('/api')) return next();
+  
+  // Otherwise serve the main index.html
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Bridge Server running on port ${PORT}`);
-  console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
 });
