@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Policy, PaymentFrequency, UserProfile, CoverageType } from '../types';
+import { Policy, PaymentFrequency, UserProfile, CoverageType, User } from '../types';
 import { translations, Language } from '../translations';
 import html2canvas from 'html2canvas';
 
@@ -9,6 +9,7 @@ interface ShareReportModalProps {
   onClose: () => void;
   policies: Policy[];
   profile: UserProfile;
+  user: User;
   lang: Language;
 }
 
@@ -17,14 +18,15 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
   onClose,
   policies,
   profile,
+  user,
   lang
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   if (!isOpen) return null;
   const t = translations[lang];
 
-  // User Requested Change: Only include Life, Pension, and Savings in Total Sum Assured
   const totalSumAssured = policies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => {
       const includedTypes = [CoverageType.LIFE, CoverageType.PENSION, CoverageType.SAVINGS];
@@ -45,7 +47,16 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
     return acc + (p.premiumAmount * multiplier);
   }, 0);
 
-  const shareText = `${t.protectionSummary}: ${profile.name}\nTotal Sum: ฿${totalSumAssured.toLocaleString()}\nHospital Benefit: ฿${totalHospitalBenefit.toLocaleString()}/day\nAnnual Premium: ฿${annualPremium.toLocaleString()}\n\nPowered by ${t.appName}\n${t.creatorCredit}`;
+  const getPublicUrl = () => {
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?view=${user.id}`;
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(getPublicUrl());
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   const getReportImageFile = async (): Promise<File | null> => {
     if (!reportRef.current) return null;
@@ -66,41 +77,6 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
         }
       }, 'image/png');
     });
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    alert(t.linkCopied);
-  };
-
-  const handleDirectShare = async () => {
-    setIsProcessing(true);
-    try {
-      const imageFile = await getReportImageFile();
-      
-      if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-        await navigator.share({
-          files: [imageFile],
-          title: t.appName,
-          text: shareText,
-        });
-      } else {
-        // Fallback for browsers that don't support file sharing
-        if (imageFile) {
-          const link = document.createElement('a');
-          link.download = imageFile.name;
-          link.href = URL.createObjectURL(imageFile);
-          link.click();
-          alert(lang === 'en' 
-            ? "Your browser doesn't support direct image sharing. The report has been downloaded so you can upload it manually." 
-            : "เบราว์เซอร์ของคุณไม่รองรับการแชร์รูปภาพโดยตรง ระบบได้ดาวน์โหลดรูปภาพให้คุณแล้วเพื่อให้คุณนำไปอัปโหลดเอง");
-        }
-      }
-    } catch (err) {
-      console.error("Sharing failed", err);
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const handleDownloadImage = async () => {
@@ -128,7 +104,6 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
         {/* Header */}
         <div className="bg-indigo-600 p-8 text-white relative overflow-hidden flex-shrink-0">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl animate-blob"></div>
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-400/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
           
           <div className="relative z-10 flex justify-between items-start">
             <div>
@@ -167,15 +142,6 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
                   <span className="text-[9px] font-bold text-slate-500 uppercase">{t.totalSumAssured}</span>
                 </div>
                 <span className="text-xs font-black text-blue-600">฿{totalSumAssured.toLocaleString()}</span>
-                <p className="text-[7px] text-slate-400 mt-1 italic leading-tight">{t.totalSumAssuredNote}</p>
-              </div>
-
-              <div className="flex flex-col p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-xs">💰</span>
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">{t.hospitalBenefit}</span>
-                </div>
-                <span className="text-xs font-black text-pink-600">฿{totalHospitalBenefit.toLocaleString()}/d</span>
               </div>
 
               <div className="flex flex-col p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
@@ -185,87 +151,45 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
                 </div>
                 <span className="text-xs font-black text-emerald-600">฿{totalRoomRate.toLocaleString()}/d</span>
               </div>
-
-              <div className="flex flex-col p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-xs">🪙</span>
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">{t.annualPremium}</span>
-                </div>
-                <span className="text-xs font-black text-amber-600">฿{annualPremium.toLocaleString()}</span>
-              </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-1">
+            <div className="mt-6 pt-4 border-t border-slate-100 text-center">
                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t.appName}</p>
-               <p className="text-[8px] text-slate-300 font-medium italic">{t.creatorCredit}</p>
             </div>
           </div>
 
-          {/* SOCIAL CONNECTOR SECTION */}
           <div className="space-y-4">
-            <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">{t.socialConnector}</h5>
-            
-            <div className="grid grid-cols-4 gap-4">
-              {[
-                { label: 'LINE', color: '#00B900', icon: 'L' },
-                { label: 'Facebook', color: '#1877F2', icon: 'F' },
-                { label: 'X', color: '#000000', icon: 'X' },
-                { label: t.shareWeb, color: '#64748b', icon: '...' }
-              ].map((btn, idx) => (
-                <button 
-                  key={idx}
-                  onClick={handleDirectShare}
-                  disabled={isProcessing}
-                  className="flex flex-col items-center space-y-1 group disabled:opacity-50"
-                >
-                  <div 
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"
-                    style={{ backgroundColor: btn.color }}
-                  >
-                    {btn.label === t.shareWeb ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6a3 3 0 100-2.684m0 2.684l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
-                    ) : (
-                      <span className="font-bold text-lg">{btn.icon}</span>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-500">{btn.label}</span>
-                </button>
-              ))}
-            </div>
+            <button 
+              onClick={handleCopyLink}
+              className={`w-full py-4 rounded-2xl font-black text-sm transition-all border flex items-center justify-center gap-3 active:scale-95 shadow-lg ${
+                copiedLink ? 'bg-emerald-500 border-emerald-500 text-white shadow-emerald-200' : 'bg-white border-slate-200 text-slate-800 shadow-slate-100 hover:bg-slate-50'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              <span>{copiedLink ? t.linkCopied : t.copyLink}</span>
+            </button>
 
-            <div className="flex gap-3">
-              <button 
-                onClick={handleCopyLink}
-                className="flex-1 flex items-center justify-center space-x-2 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl font-bold transition-all border border-slate-200"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-                <span className="text-xs">{t.copyLink}</span>
-              </button>
-
-              <button 
-                onClick={handleDownloadImage}
-                disabled={isProcessing}
-                className="flex-[2] flex items-center justify-center space-x-2 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-bold transition-all shadow-xl shadow-indigo-100"
-              >
-                {isProcessing ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span className="text-xs">{t.savingImage}</span>
-                  </div>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span className="text-sm">{t.downloadImage}</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <button 
+              onClick={handleDownloadImage}
+              disabled={isProcessing}
+              className="w-full flex items-center justify-center space-x-2 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-bold transition-all shadow-xl shadow-indigo-100"
+            >
+              {isProcessing ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span className="text-xs">{t.savingImage}</span>
+                </div>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span className="text-sm">{t.downloadImage}</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

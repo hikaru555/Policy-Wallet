@@ -1,13 +1,30 @@
 
-import { Policy, UserProfile, PolicyDocument } from '../types';
+import { Policy, UserProfile } from '../types';
 
 /**
- * Service to interact with Cloud SQL (PostgreSQL) and Cloud Storage
- * Assumes a backend API is running to bridge the frontend to the DB/Bucket
+ * Service to interact with Cloud SQL (PostgreSQL) bridge
  */
-const API_BASE_URL = '/api'; // Change this to your deployed backend URL
+const API_BASE_URL = window.location.origin.includes('localhost') 
+  ? 'http://localhost:8080/api' 
+  : '/api'; 
 
 export const cloudSyncService = {
+  /**
+   * Fetch all portfolio data (Policies + Profile) in one call
+   */
+  async getFullData(userId: string): Promise<{ policies: Policy[], profile: UserProfile } | null> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/portfolio/${userId}`, {
+        headers: { 'X-User-ID': userId }
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (error) {
+      console.warn('Cloud SQL Fetch failed - check network or server status');
+      return null;
+    }
+  },
+
   /**
    * Sync policies to Cloud SQL
    */
@@ -15,27 +32,16 @@ export const cloudSyncService = {
     try {
       const response = await fetch(`${API_BASE_URL}/policies/sync`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, policies }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-ID': userId 
+        },
+        body: JSON.stringify({ policies }),
       });
       return response.ok;
     } catch (error) {
-      console.error('Failed to sync policies to Cloud SQL', error);
+      console.error('Failed to sync policies', error);
       return false;
-    }
-  },
-
-  /**
-   * Fetch policies from Cloud SQL
-   */
-  async getPolicies(userId: string): Promise<Policy[] | null> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/policies/${userId}`);
-      if (!response.ok) return null;
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to fetch from Cloud SQL', error);
-      return null;
     }
   },
 
@@ -46,53 +52,30 @@ export const cloudSyncService = {
     try {
       const response = await fetch(`${API_BASE_URL}/profile/sync`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, profile }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-ID': userId 
+        },
+        body: JSON.stringify({ profile }),
       });
       return response.ok;
     } catch (error) {
-      console.error('Failed to sync profile', error);
+      console.error('Profile sync failed', error);
       return false;
     }
   },
 
   /**
-   * Upload file to Cloud Storage Bucket
+   * Fetch Public View Summary (Unauthenticated sharing)
    */
-  async uploadToBucket(userId: string, policyId: string, file: File, category: string): Promise<string | null> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', userId);
-    formData.append('policyId', policyId);
-    formData.append('category', category);
-
+  async getPublicView(userId: string): Promise<{ policies: Policy[], profile: UserProfile } | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/vault/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      return data.publicUrl; // Returns the gs:// or https:// storage URL
+      const response = await fetch(`${API_BASE_URL}/public/view/${userId}`);
+      if (!response.ok) return null;
+      return await response.json();
     } catch (error) {
-      console.error('Cloud Storage upload failed', error);
+      console.error('Public view fetch failed', error);
       return null;
-    }
-  },
-
-  /**
-   * Delete from Cloud Storage
-   */
-  async deleteFromBucket(fileUrl: string): Promise<boolean> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/vault/delete`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileUrl }),
-      });
-      return response.ok;
-    } catch (error) {
-      console.error('Delete from bucket failed', error);
-      return false;
     }
   }
 };

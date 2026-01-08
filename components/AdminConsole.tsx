@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
-import { User, UserRole } from '../types';
+import { User } from '../types';
 
 interface AdminConsoleProps {
   currentUser: User;
@@ -10,9 +10,8 @@ interface AdminConsoleProps {
 
 const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
   const t = translations[lang];
-  const [activeSubTab, setActiveSubTab] = useState<'users' | 'cloud' | 'deploy'>('users');
+  const [activeSubTab, setActiveSubTab] = useState<'users' | 'deploy' | 'schema'>('users');
   
-  // Persistence for user management
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('pw_users');
     return saved ? JSON.parse(saved) : [];
@@ -20,10 +19,22 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Exact Project ID from environment
   const projectId = "gen-lang-client-0928682283";
+  const sqlConnection = "gen-lang-client-0928682283:us-central1:tiered-web-app-db-bbbd";
+  const bucketName = "policywallet";
+  const dbUser = "policywallet";
+  const dbName = "policywallet";
+  const dbPass = ".E9iAtlC[I5;g&<3";
 
-  // Ensure current user is in the list
+  const sqlSchema = `-- Policy Wallet Database Schema
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    policies JSONB DEFAULT '[]'::jsonb,
+    profile JSONB DEFAULT '{}'::jsonb,
+    last_sync TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_users_id ON users(id);`;
+
   useEffect(() => {
     setUsers(prev => {
       if (!prev.find(u => u.email === currentUser.email)) {
@@ -35,10 +46,37 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
     });
   }, [currentUser]);
 
-  // Sync back to local storage on changes
-  useEffect(() => {
-    localStorage.setItem('pw_users', JSON.stringify(users));
-  }, [users]);
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const deploymentSteps = [
+    {
+      id: 'proj',
+      title: "1. Login & Set Project",
+      command: `gcloud auth login\ngcloud config set project ${projectId}\ngcloud services enable cloudrun.googleapis.com sqladmin.googleapis.com storage.googleapis.com artifactregistry.googleapis.com`,
+      icon: '🆔'
+    },
+    {
+      id: 'db',
+      title: "2. Database Initialization",
+      command: `gcloud sql databases create ${dbName} --instance=tiered-web-app-db-bbbd\n# Next: Click "SQL Schema" tab to get the setup code.`,
+      icon: '🐘'
+    },
+    {
+      id: 'run',
+      title: "3. Direct Deploy (No Dockerfile needed)",
+      command: `gcloud run deploy policy-bridge \\
+  --source . \\
+  --region us-central1 \\
+  --add-cloudsql-instances ${sqlConnection} \\
+  --set-env-vars="DB_USER=${dbUser},DB_NAME=${dbName},DB_PASSWORD='${dbPass}',CLOUD_SQL_CONNECTION_NAME=${sqlConnection},BUCKET_NAME=${bucketName}" \\
+  --allow-unauthenticated`,
+      icon: '🚀'
+    }
+  ];
 
   if (currentUser.role !== 'Admin') {
     return (
@@ -50,150 +88,42 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
     );
   }
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const togglePro = (userId: string) => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId && u.role !== 'Admin') {
-        return { ...u, role: u.role === 'Pro-Member' ? 'Member' : 'Pro-Member' };
-      }
-      return u;
-    }));
-  };
-
-  const deploymentSteps = [
-    {
-      id: 'proj',
-      title: t.setupProject,
-      command: `gcloud config set project ${projectId}\ngcloud services enable cloudrun.googleapis.com sqladmin.googleapis.com storage.googleapis.com aiplatform.googleapis.com`,
-      icon: '🆔'
-    },
-    {
-      id: 'db',
-      title: "Initialize PostgreSQL Instance",
-      command: `gcloud sql instances create pw-postgres --database-version=POSTGRES_15 --tier=db-f1-micro --region=asia-southeast1\ngcloud sql databases create policywallet --instance=pw-postgres`,
-      icon: '🐘'
-    },
-    {
-      id: 'store',
-      title: t.setupStorage,
-      command: `gsutil mb -l asia-southeast1 gs://${projectId}-vault\ngsutil iam ch allUsers:objectViewer gs://${projectId}-vault`,
-      icon: '🪣'
-    },
-    {
-      id: 'run',
-      title: t.deployApp,
-      command: `gcloud run deploy policy-wallet --source . --region asia-southeast1 --add-cloudsql-instances pw-postgres --allow-unauthenticated`,
-      icon: '🚀'
-    }
-  ];
-
-  const gcpTemplates = [
-    {
-      name: 'Cloud SQL Connect (PostgreSQL)',
-      feature: 'Primary Database',
-      description: 'Your central store for policies, users, and audit logs. Real-time multi-device sync active.',
-      icon: '🐘',
-      color: 'blue'
-    },
-    {
-      name: 'Google Cloud Storage',
-      feature: 'Document Vault',
-      description: 'Encrypted storage for policy scans and medical records. Linked to Cloud SQL for indexing.',
-      icon: '🪣',
-      color: 'emerald'
-    },
-    {
-      name: 'Cloud Run Service',
-      feature: 'Backend Orchestrator',
-      description: 'Scalable API that bridges this dashboard with your SQL and Storage instances.',
-      icon: '🚀',
-      color: 'indigo'
-    }
-  ];
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
-      {/* Tab Switcher */}
-      <div className="flex p-1 bg-slate-100 rounded-2xl w-fit">
-        <button 
-          onClick={() => setActiveSubTab('users')}
-          className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeSubTab === 'users' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          {t.manageUsers}
-        </button>
-        <button 
-          onClick={() => setActiveSubTab('cloud')}
-          className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeSubTab === 'cloud' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Infrastructure
-        </button>
-        <button 
-          onClick={() => setActiveSubTab('deploy')}
-          className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeSubTab === 'deploy' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Deployment Hub
-        </button>
+      <div className="flex p-1 bg-slate-100 rounded-2xl w-fit overflow-x-auto">
+        {['users', 'deploy', 'schema'].map((tab) => (
+          <button 
+            key={tab}
+            onClick={() => setActiveSubTab(tab as any)}
+            className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex-shrink-0 ${activeSubTab === tab ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            {tab === 'users' ? t.manageUsers : tab === 'deploy' ? 'Deployment' : 'SQL Schema'}
+          </button>
+        ))}
       </div>
 
       {activeSubTab === 'users' && (
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 animate-in slide-in-from-left-4 duration-300">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.manageUsers}</h3>
-              <p className="text-slate-500 text-sm mt-1">Review and manage access levels for your clients.</p>
-            </div>
-            <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border border-indigo-100">
-              Total: {users.length} Users
-            </div>
-          </div>
-
-          <div className="overflow-hidden border border-slate-100 rounded-3xl">
+        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-8">{t.manageUsers}</h3>
+          <div className="overflow-x-auto border border-slate-100 rounded-3xl">
             <table className="w-full text-left">
               <thead className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4">{t.userName}</th>
                   <th className="px-6 py-4">{t.userEmail}</th>
                   <th className="px-6 py-4">{t.userRole}</th>
-                  <th className="px-6 py-4 text-right">{t.action}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {users.map(user => (
-                  <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <img src={user.picture} className="w-8 h-8 rounded-full border border-white shadow-sm" alt="" />
-                        <span className="text-sm font-bold text-slate-800">{user.name}</span>
-                      </div>
+                  <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 flex items-center gap-3">
+                      <img src={user.picture} className="w-8 h-8 rounded-full border border-slate-200" alt="" />
+                      <span className="text-sm font-bold text-slate-800">{user.name}</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-500">{user.email}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        user.role === 'Admin' ? 'bg-indigo-100 text-indigo-700' :
-                        user.role === 'Pro-Member' ? 'bg-amber-100 text-amber-700' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {user.id !== currentUser.id && user.role !== 'Admin' && (
-                        <button 
-                          onClick={() => togglePro(user.id)}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                            user.role === 'Pro-Member' 
-                            ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' 
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100'
-                          }`}
-                        >
-                          {user.role === 'Pro-Member' ? t.demoteMember : t.makePro}
-                        </button>
-                      )}
+                      <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${user.role === 'Admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>{user.role}</span>
                     </td>
                   </tr>
                 ))}
@@ -203,153 +133,53 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
         </div>
       )}
 
-      {activeSubTab === 'cloud' && (
-        <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { label: 'PostgreSQL SQL', status: t.connected, icon: '🐘', color: 'emerald' },
-              { label: 'Storage Bucket', status: t.connected, icon: '🪣', color: 'emerald' },
-              { label: 'Cloud Run API', status: t.connected, icon: '🚀', color: 'emerald' },
-              { label: 'Gemini AI', status: 'Active', icon: '🤖', color: 'blue' }
-            ].map((service, i) => (
-              <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                <div className={`w-12 h-12 bg-slate-50 text-2xl flex items-center justify-center rounded-2xl`}>
-                  {service.icon}
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{service.label}</p>
-                  <p className={`text-xs font-bold text-emerald-600`}>{service.status}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-             <div className="flex items-center justify-between mb-8">
-               <h3 className="text-xl font-black text-slate-800 tracking-tight uppercase">Cloud SQL Utilization (PostgreSQL)</h3>
-               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Instance: pw-postgres-asia</span>
-             </div>
-
-             <div className="space-y-6">
-               <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-slate-700">Database Storage (10GB Tier)</span>
-                    <span className="text-xs text-slate-500 font-medium">1.2 MB / 10.0 GB</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: '1%' }}></div>
-                  </div>
+      {activeSubTab === 'deploy' && (
+        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+           <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Google Cloud Console</h3>
+           <p className="text-slate-500 text-sm mb-10">Use Google Cloud Buildpacks for direct deployment. No Dockerfile required.</p>
+           <div className="space-y-6">
+             {deploymentSteps.map((step) => (
+               <div key={step.id}>
+                 <div className="flex items-center gap-3 mb-3">
+                   <span className="text-xl">{step.icon}</span>
+                   <h4 className="font-bold text-slate-800 text-sm">{step.title}</h4>
+                 </div>
+                 <div className="relative">
+                   <pre className="p-4 bg-slate-900 text-blue-400 rounded-2xl overflow-x-auto text-xs font-mono border border-slate-800 shadow-lg">
+                     <code>{step.command}</code>
+                   </pre>
+                   <button 
+                     onClick={() => handleCopy(step.command, step.id)}
+                     className={`absolute top-4 right-4 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+                       copiedId === step.id ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'
+                     }`}
+                   >
+                     {copiedId === step.id ? 'Copied!' : 'Copy'}
+                   </button>
+                 </div>
                </div>
-               
-               <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-slate-700">CPU Usage (vCPU Burst)</span>
-                    <span className="text-xs text-slate-500 font-medium">Healthy</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '15%' }}></div>
-                  </div>
-               </div>
-             </div>
-          </div>
-
-          <div className="space-y-6">
-             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.gcpTemplates}</h4>
-                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-tighter">Your Active Stack</span>
-             </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {gcpTemplates.map((tmpl, idx) => (
-                  <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm group hover:border-indigo-400 transition-all cursor-pointer">
-                    <div className="flex items-center justify-between mb-4">
-                       <span className="text-3xl">{tmpl.icon}</span>
-                       <span className={`text-[8px] font-black uppercase px-2 py-1 rounded bg-emerald-50 text-emerald-700`}>Active & Linked</span>
-                    </div>
-                    <h5 className="font-black text-slate-800 text-sm mb-1">{tmpl.name}</h5>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">{tmpl.feature}</p>
-                    <p className="text-xs text-slate-500 leading-relaxed mb-4">{tmpl.description}</p>
-                    <button className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest group-hover:underline">Monitor Logs ↗</button>
-                  </div>
-                ))}
-             </div>
-          </div>
+             ))}
+           </div>
         </div>
       )}
 
-      {activeSubTab === 'deploy' && (
-        <div className="space-y-8">
-          <div className="bg-indigo-900 border border-indigo-700 rounded-[2.5rem] p-8 animate-in slide-in-from-top-4 duration-500 text-white">
-            <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 bg-white/10 text-2xl flex items-center justify-center rounded-2xl shadow-sm">🐘</div>
-              <div className="flex-1">
-                <h3 className="text-xl font-black mb-2">Connected to PostgreSQL</h3>
-                <p className="text-indigo-200 text-sm mb-6 opacity-90">Your application is currently communicating with the primary Cloud SQL instance.</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                    <p className="text-[10px] font-bold text-indigo-300 uppercase mb-1">PostgreSQL Connection</p>
-                    <p className="text-xs text-white mb-3">Syncing policies via <b>SQL Alchemy / pg</b> interface.</p>
-                  </div>
-                  <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                    <p className="text-[10px] font-bold text-indigo-300 uppercase mb-1">Cloud Storage Bucket</p>
-                    <p className="text-xs text-white">Object lifecycle management active for <b>gs://${projectId}-vault</b>.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 animate-in zoom-in-95 duration-500">
-             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-6 border-b border-slate-50">
-               <div>
-                 <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.deployTitle}</h3>
-                 <p className="text-slate-500 text-sm mt-1">{t.deployDesc}</p>
-               </div>
-               <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold text-xs border border-blue-100">
-                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                 <span>Stack Health: 100%</span>
-               </div>
-             </div>
-
-             <div className="space-y-8">
-               {deploymentSteps.map((step, i) => (
-                 <div key={step.id} className="relative group">
-                   <div className="flex items-center space-x-4 mb-3">
-                     <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:bg-indigo-50 transition-colors">
-                       {step.icon}
-                     </div>
-                     <h4 className="font-bold text-slate-800">{step.title}</h4>
-                   </div>
-                   
-                   <div className="relative">
-                     <pre className="p-5 bg-slate-900 text-blue-400 rounded-2xl overflow-x-auto text-xs font-mono border border-slate-800 shadow-xl group-hover:border-indigo-500/50 transition-all">
-                       <code>{step.command}</code>
-                     </pre>
-                     <button 
-                       onClick={() => handleCopy(step.command, step.id)}
-                       className={`absolute top-4 right-4 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
-                         copiedId === step.id ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'
-                       }`}
-                     >
-                       {copiedId === step.id ? 'Copied! ✅' : 'Copy 📋'}
-                     </button>
-                   </div>
-                 </div>
-               ))}
-             </div>
-
-             <div className="mt-12 p-8 bg-indigo-600 rounded-[2rem] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-indigo-100 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-               <div className="relative z-10 text-center md:text-left">
-                 <h4 className="text-xl font-black mb-2">Cloud Infrastructure Active</h4>
-                 <p className="text-indigo-100 text-sm">Your multi-device sync is now powered by high-performance PostgreSQL and scalable Storage Buckets.</p>
-               </div>
-               <button className="relative z-10 px-8 py-4 bg-white text-indigo-600 rounded-2xl font-black text-sm shadow-xl hover:bg-indigo-50 transition-all active:scale-95">
-                 Get CLI Support 🧔
-               </button>
-             </div>
-          </div>
+      {activeSubTab === 'schema' && (
+        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+           <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">PostgreSQL Schema</h3>
+           <p className="text-slate-500 text-sm mb-10">Execute this SQL in your Cloud SQL instance to create the necessary tables.</p>
+           <div className="relative">
+             <pre className="p-6 bg-slate-900 text-emerald-400 rounded-3xl overflow-x-auto text-xs font-mono border border-slate-800 shadow-xl">
+               <code>{sqlSchema}</code>
+             </pre>
+             <button 
+               onClick={() => handleCopy(sqlSchema, 'schema-copy')}
+               className={`absolute top-6 right-6 px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${
+                 copiedId === 'schema-copy' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'
+               }`}
+             >
+               {copiedId === 'schema-copy' ? 'Copied!' : 'Copy SQL'}
+             </button>
+           </div>
         </div>
       )}
     </div>
