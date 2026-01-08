@@ -207,7 +207,7 @@ const App: React.FC = () => {
 
         {/* User Card */}
         <div className="px-2">
-          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 relative group">
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 relative group transition-all hover:bg-slate-100/50">
             <div className="flex items-center space-x-3">
               <img src={user.picture} className="w-10 h-10 rounded-full border border-white shadow-sm" alt={user.name} />
               <div className="min-w-0">
@@ -225,7 +225,7 @@ const App: React.FC = () => {
             </div>
             <button 
               onClick={handleLogout}
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-600"
+              className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-600 transition-colors"
               title={t.logout}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -270,6 +270,19 @@ const App: React.FC = () => {
               </span>
             </button>
           )}
+
+          {/* Explicit Logout Button in Sidebar */}
+          <div className="pt-4 mt-4 border-t border-slate-100">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-500 hover:bg-rose-50 transition-all duration-200"
+            >
+              <span className="flex items-center gap-3">
+                <span className="text-lg">🚪</span>
+                <span>{t.logout}</span>
+              </span>
+            </button>
+          </div>
         </nav>
 
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mt-auto space-y-4">
