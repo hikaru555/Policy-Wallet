@@ -17,6 +17,7 @@ export const translations = {
     addPolicy: "Add Policy",
     cancel: "Cancel",
     totalSumAssured: "Total Sum Assured",
+    totalSumAssuredNote: "Includes Life, Pension, and Savings only",
     dailyRoomRate: "Daily Room Rate",
     annualPremium: "Annual Premium",
     coverageDist: "Coverage Distribution",
@@ -110,6 +111,7 @@ export const translations = {
     life: "Life Insurance",
     critical: "Critical Illness",
     accident: "Personal Accident",
+    hospitalBenefit: "Hospital Benefit",
     taxTitle: "Thai Tax Optimization",
     taxSubtitle: "Maximize your tax deductions using your insurance portfolio.",
     lifeDeduction: "Life & Health Deduction",
@@ -148,7 +150,10 @@ export const translations = {
     gcpTemplates: "GCP Solution Templates",
     templateDesc: "Based on your dashboard, use these templates to build your app infra faster.",
     troubleshoot: "Fix Billing Connection",
-    troubleshootDesc: "If you've set up billing but the button is still disabled, follow these verification steps:"
+    troubleshootDesc: "If you've set up billing but the button is still disabled, follow these verification steps:",
+    syncCalendar: "Sync to Calendar",
+    calendarDesc: "Export all active renewal dates to your Google or Apple Calendar.",
+    calendarSuccess: "Calendar file (.ics) generated. Open it to sync events."
   },
   th: {
     appName: "Policy Wallet",
@@ -164,6 +169,7 @@ export const translations = {
     addPolicy: "เพิ่มกรมธรรม์",
     cancel: "ยกเลิก",
     totalSumAssured: "ทุนประกันรวม",
+    totalSumAssuredNote: "รวมเฉพาะประกันชีวิต, บำนาญ และออมทรัพย์",
     dailyRoomRate: "ค่าห้องต่อวันรวม",
     annualPremium: "เบี้ยประกันต่อปี",
     coverageDist: "สัดส่วนความคุ้มครอง",
@@ -257,6 +263,7 @@ export const translations = {
     life: "ประกันชีวิต",
     critical: "โรคร้ายแรง",
     accident: "อุบัติเหตุ",
+    hospitalBenefit: "ค่าชดเชยรายวัน",
     taxTitle: "วางแผนลดหย่อนภาษี",
     taxSubtitle: "เพิ่มสิทธิประโยชน์ทางภาษีสูงสุดด้วยพอร์ตประกันของคุณ",
     lifeDeduction: "ลดหย่อนเบี้ยประกันชีวิตและสุขภาพ",
@@ -295,6 +302,9 @@ export const translations = {
     gcpTemplates: "เทมเพลตโซลูชัน GCP",
     templateDesc: "อ้างอิงจากหน้าแดชบอร์ดของคุณ ใช้เทมเพลตเหล่านี้เพื่อสร้างโครงสร้างพื้นฐานของแอปได้เร็วขึ้น",
     troubleshoot: "แก้ไขปัญหาการเชื่อมต่อการชำระเงิน",
-    troubleshootDesc: "หากคุณตั้งค่าการเรียกเก็บเงินแล้วแต่ปุ่มยังใช้งานไม่ได้ ให้ทำตามขั้นตอนการตรวจสอบเหล่านี้:"
+    troubleshootDesc: "หากคุณตั้งค่าการเรียกเก็บเงินแล้วแต่ปุ่มยังใช้งานไม่ได้ ให้ทำตามขั้นตอนการตรวจสอบเหล่านี้:",
+    syncCalendar: "ซิงค์เข้าปฏิทิน",
+    calendarDesc: "ส่งออกรายการต่ออายุกรมธรรม์ไปยัง Google หรือ Apple Calendar ของคุณ",
+    calendarSuccess: "สร้างไฟล์ปฏิทิน (.ics) สำเร็จแล้ว กรุณาเปิดไฟล์เพื่อเริ่มการซิงค์"
   }
 };

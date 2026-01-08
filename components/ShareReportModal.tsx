@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Policy, PaymentFrequency, UserProfile } from '../types';
+import { Policy, PaymentFrequency, UserProfile, CoverageType } from '../types';
 import { translations, Language } from '../translations';
 import html2canvas from 'html2canvas';
 
@@ -24,8 +24,16 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
   if (!isOpen) return null;
   const t = translations[lang];
 
+  // User Requested Change: Only include Life, Pension, and Savings in Total Sum Assured
   const totalSumAssured = policies.reduce((acc, p) => 
-    acc + p.coverages.reduce((cAcc, c) => cAcc + c.sumAssured, 0), 0);
+    acc + p.coverages.reduce((cAcc, c) => {
+      const includedTypes = [CoverageType.LIFE, CoverageType.PENSION, CoverageType.SAVINGS];
+      return includedTypes.includes(c.type) ? cAcc + c.sumAssured : cAcc;
+    }, 0), 0);
+
+  const totalHospitalBenefit = policies.reduce((acc, p) => 
+    acc + p.coverages.reduce((cAcc, c) => 
+      c.type === CoverageType.HOSPITAL_BENEFIT ? cAcc + c.sumAssured : cAcc, 0), 0);
 
   const totalRoomRate = policies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => cAcc + (c.roomRate || 0), 0), 0);
@@ -37,7 +45,7 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
     return acc + (p.premiumAmount * multiplier);
   }, 0);
 
-  const shareText = `${t.protectionSummary}: ${profile.name}\nTotal Sum: ฿${totalSumAssured.toLocaleString()}\nAnnual Premium: ฿${annualPremium.toLocaleString()}\n\nPowered by ${t.appName}\n${t.creatorCredit}`;
+  const shareText = `${t.protectionSummary}: ${profile.name}\nTotal Sum: ฿${totalSumAssured.toLocaleString()}\nHospital Benefit: ฿${totalHospitalBenefit.toLocaleString()}/day\nAnnual Premium: ฿${annualPremium.toLocaleString()}\n\nPowered by ${t.appName}\n${t.creatorCredit}`;
 
   const getReportImageFile = async (): Promise<File | null> => {
     if (!reportRef.current) return null;
@@ -152,29 +160,38 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex justify-between items-center p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-sm">🛡️</div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">{t.totalSumAssured}</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-xs">🛡️</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">{t.totalSumAssured}</span>
                 </div>
-                <span className="text-sm font-bold text-blue-600">฿{totalSumAssured.toLocaleString()}</span>
+                <span className="text-xs font-black text-blue-600">฿{totalSumAssured.toLocaleString()}</span>
+                <p className="text-[7px] text-slate-400 mt-1 italic leading-tight">{t.totalSumAssuredNote}</p>
               </div>
 
-              <div className="flex justify-between items-center p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-sm">🏥</div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">{t.dailyRoomRate}</span>
+              <div className="flex flex-col p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-xs">💰</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">{t.hospitalBenefit}</span>
                 </div>
-                <span className="text-sm font-bold text-emerald-600">฿{totalRoomRate.toLocaleString()}</span>
+                <span className="text-xs font-black text-pink-600">฿{totalHospitalBenefit.toLocaleString()}/d</span>
               </div>
 
-              <div className="flex justify-between items-center p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-sm">💰</div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">{t.annualPremium}</span>
+              <div className="flex flex-col p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-xs">🏥</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">{t.dailyRoomRate}</span>
                 </div>
-                <span className="text-sm font-bold text-amber-600">฿{annualPremium.toLocaleString()}</span>
+                <span className="text-xs font-black text-emerald-600">฿{totalRoomRate.toLocaleString()}/d</span>
+              </div>
+
+              <div className="flex flex-col p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-xs">🪙</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">{t.annualPremium}</span>
+                </div>
+                <span className="text-xs font-black text-amber-600">฿{annualPremium.toLocaleString()}</span>
               </div>
             </div>
 

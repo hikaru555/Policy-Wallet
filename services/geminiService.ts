@@ -41,8 +41,9 @@ export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfi
     1. Life Protection Gap: Total sum assured across all policies should cover at least (Total Debt + (Annual Income * Dependents / 2)). Ideally 5-10x annual income.
     2. Health Room Rate Gap: Evaluate if the daily room rate is sufficient for standard private hospitals in Thailand (Standard: ฿4,000+, Premium: ฿10,000+).
     3. Critical Illness Gap: Should ideally be 2-3x annual income to cover loss of income and specialized care.
-    4. Retirement/Savings Gap: If applicable, suggest if the current portfolio lacks endowment or pension features relative to age/income.
-    5. Cross-sell Opportunities: Identify specific insurance products that would solve the identified gaps.
+    4. Hospital Benefit Gap: Check if daily cash compensation for hospital stays is adequate.
+    5. Retirement/Savings Gap: If applicable, suggest if the current portfolio lacks endowment or pension features relative to age/income.
+    6. Cross-sell Opportunities: Identify specific insurance products that would solve the identified gaps.
 
     Output Language: ${lang === 'th' ? 'Thai' : 'English'}
     
@@ -202,7 +203,7 @@ export const parsePolicyDocument = async (base64Data: string, mimeType: string):
     - premiumAmount: (number)
     - frequency: (one of: "Monthly", "Quarterly", "Yearly")
     - dueDate: (string as YYYY-MM-DD)
-    - coverages: (array of objects with keys: type [one of: "Life Insurance", "Health Insurance", "Personal Accident", "Critical Illness", "Savings/Endowment", "Pension/Retirement"], sumAssured [number], roomRate [number or null])
+    - coverages: (array of objects with keys: type [one of: "Life Insurance", "Health Insurance", "Personal Accident", "Critical Illness", "Savings/Endowment", "Pension/Retirement", "Hospital Benefit"], sumAssured [number], roomRate [number or null])
     
     Important: If multiple coverages exist (e.g. Life + Health Rider), include all.
   `;
@@ -231,7 +232,7 @@ export const parsePolicyDocument = async (base64Data: string, mimeType: string):
               items: {
                 type: Type.OBJECT,
                 properties: {
-                  type: { type: Type.STRING, enum: ["Life Insurance", "Health Insurance", "Personal Accident", "Critical Illness", "Savings/Endowment", "Pension/Retirement"] },
+                  type: { type: Type.STRING, enum: ["Life Insurance", "Health Insurance", "Personal Accident", "Critical Illness", "Savings/Endowment", "Pension/Retirement", "Hospital Benefit"] },
                   sumAssured: { type: Type.NUMBER },
                   roomRate: { type: Type.NUMBER, nullable: true }
                 },

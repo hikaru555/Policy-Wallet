@@ -10,7 +10,7 @@ interface DashboardProps {
   lang: Language;
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) => {
   const t = translations[lang];
@@ -21,8 +21,17 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
   [policies]);
 
   // Total sum of all sumAssured across active/grace policies
+  // User Requested Change: Only include Life, Pension, and Savings
   const totalSumAssured = activeAndGracePolicies.reduce((acc, p) => 
-    acc + p.coverages.reduce((cAcc, c) => cAcc + c.sumAssured, 0), 0);
+    acc + p.coverages.reduce((cAcc, c) => {
+      const includedTypes = [CoverageType.LIFE, CoverageType.PENSION, CoverageType.SAVINGS];
+      return includedTypes.includes(c.type) ? cAcc + c.sumAssured : cAcc;
+    }, 0), 0);
+
+  // Total Daily Hospital Benefit (Cash per day)
+  const totalHospitalBenefit = activeAndGracePolicies.reduce((acc, p) => 
+    acc + p.coverages.reduce((cAcc, c) => 
+      c.type === CoverageType.HOSPITAL_BENEFIT ? cAcc + c.sumAssured : cAcc, 0), 0);
 
   // Total daily room rate across all health coverages
   const totalRoomRate = activeAndGracePolicies.reduce((acc, p) => 
@@ -59,20 +68,65 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
     }
   }
 
+  const handleSyncCalendar = () => {
+    if (activeAndGracePolicies.length === 0) return;
+
+    // Generate iCalendar (.ics) content
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Policy Wallet//NONSGML v1.0//EN\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n";
+
+    activeAndGracePolicies.forEach(p => {
+      const date = new Date(p.dueDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}${month}${day}`;
+
+      icsContent += "BEGIN:VEVENT\n";
+      icsContent += `UID:${p.id}@policywallet.app\n`;
+      icsContent += `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z\n`;
+      icsContent += `DTSTART;VALUE=DATE:${dateStr}\n`;
+      icsContent += `SUMMARY:Insurance Renewal: ${p.planName}\n`;
+      icsContent += `DESCRIPTION:Insurance renewal for ${p.planName} (${p.company}). Premium amount: ฿${p.premiumAmount.toLocaleString()}. Manage your policies at Policy Wallet. Contact Patrick for help: https://line.me/ti/p/@patrickfwd\n`;
+      icsContent += "STATUS:CONFIRMED\n";
+      icsContent += "TRANSP:TRANSPARENT\n";
+      icsContent += "END:VEVENT\n";
+    });
+
+    icsContent += "END:VCALENDAR";
+
+    // Create download link
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', 'Insurance-Renewals.ics');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert(t.calendarSuccess);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-slate-500 text-sm font-medium">{t.totalSumAssured}</p>
-          <h3 className="text-3xl font-bold text-blue-600 mt-1">฿{totalSumAssured.toLocaleString()}</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.totalSumAssured}</p>
+            <h3 className="text-2xl font-black text-blue-600 mt-1">฿{totalSumAssured.toLocaleString()}</h3>
+          </div>
+          <p className="text-[9px] text-slate-400 mt-2 italic">{t.totalSumAssuredNote}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-slate-500 text-sm font-medium">{t.dailyRoomRate}</p>
-          <h3 className="text-3xl font-bold text-emerald-600 mt-1">฿{totalRoomRate.toLocaleString()}</h3>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.hospitalBenefit}</p>
+          <h3 className="text-2xl font-black text-pink-500 mt-1">฿{totalHospitalBenefit.toLocaleString()} <span className="text-xs font-medium text-slate-400">/day</span></h3>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-slate-500 text-sm font-medium">{t.annualPremium}</p>
-          <h3 className="text-3xl font-bold text-amber-500 mt-1">฿{annualPremium.toLocaleString()}</h3>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.dailyRoomRate}</p>
+          <h3 className="text-2xl font-black text-emerald-600 mt-1">฿{totalRoomRate.toLocaleString()} <span className="text-xs font-medium text-slate-400">/day</span></h3>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.annualPremium}</p>
+          <h3 className="text-2xl font-black text-amber-500 mt-1">฿{annualPremium.toLocaleString()}</h3>
         </div>
       </div>
 
@@ -136,9 +190,18 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <h4 className="font-bold text-lg mb-4">{t.upcomingRenewals}</h4>
-          <div className="space-y-4">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-bold text-lg">{t.upcomingRenewals}</h4>
+            <button 
+              onClick={handleSyncCalendar}
+              disabled={activeAndGracePolicies.length === 0}
+              className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              📅 {t.syncCalendar}
+            </button>
+          </div>
+          <div className="space-y-4 flex-1">
             {policies.length === 0 ? (
               <div className="text-center py-24 text-slate-400 italic text-sm border-2 border-dashed border-slate-100 rounded-2xl">
                 No policies found to track renewals
@@ -182,6 +245,11 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                 })
             )}
           </div>
+          {activeAndGracePolicies.length > 0 && (
+            <p className="text-[9px] text-slate-400 mt-4 text-center italic">
+              {t.calendarDesc}
+            </p>
+          )}
         </div>
       </div>
     </div>

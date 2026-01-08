@@ -5,7 +5,8 @@ export enum CoverageType {
   ACCIDENT = 'Personal Accident',
   CRITICAL = 'Critical Illness',
   SAVINGS = 'Savings/Endowment',
-  PENSION = 'Pension/Retirement'
+  PENSION = 'Pension/Retirement',
+  HOSPITAL_BENEFIT = 'Hospital Benefit'
 }
 
 export enum PaymentFrequency {
