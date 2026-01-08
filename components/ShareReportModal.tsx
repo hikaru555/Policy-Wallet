@@ -39,59 +39,74 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
 
   const shareText = `${t.protectionSummary}: ${profile.name}\nTotal Sum: ฿${totalSumAssured.toLocaleString()}\nAnnual Premium: ฿${annualPremium.toLocaleString()}\n\nPowered by ${t.appName}\n${t.creatorCredit}`;
 
+  const getReportImageFile = async (): Promise<File | null> => {
+    if (!reportRef.current) return null;
+    
+    const canvas = await html2canvas(reportRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#f8fafc',
+    });
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `Protection-Summary-${profile.name.replace(/\s+/g, '-')}.png`, { type: 'image/png' });
+          resolve(file);
+        } else {
+          resolve(null);
+        }
+      }, 'image/png');
+    });
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     alert(t.linkCopied);
   };
 
-  const handleShareLine = () => {
-    const url = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleShareFacebook = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(shareText)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleShareX = () => {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleWebShare = async () => {
-    if (navigator.share) {
-      try {
+  const handleDirectShare = async () => {
+    setIsProcessing(true);
+    try {
+      const imageFile = await getReportImageFile();
+      
+      if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
         await navigator.share({
+          files: [imageFile],
           title: t.appName,
           text: shareText,
-          url: window.location.href,
         });
-      } catch (err) {
-        console.error("Error sharing:", err);
+      } else {
+        // Fallback for browsers that don't support file sharing
+        if (imageFile) {
+          const link = document.createElement('a');
+          link.download = imageFile.name;
+          link.href = URL.createObjectURL(imageFile);
+          link.click();
+          alert(lang === 'en' 
+            ? "Your browser doesn't support direct image sharing. The report has been downloaded so you can upload it manually." 
+            : "เบราว์เซอร์ของคุณไม่รองรับการแชร์รูปภาพโดยตรง ระบบได้ดาวน์โหลดรูปภาพให้คุณแล้วเพื่อให้คุณนำไปอัปโหลดเอง");
+        }
       }
-    } else {
-      handleCopyLink();
+    } catch (err) {
+      console.error("Sharing failed", err);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleDownloadImage = async () => {
-    if (!reportRef.current) return;
     setIsProcessing(true);
     try {
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // Higher quality
-        useCORS: true,
-        backgroundColor: '#f8fafc',
-        borderRadius: 24,
-      });
-      const image = canvas.toDataURL("image/png", 1.0);
-      const link = document.createElement('a');
-      link.download = `Protection-Summary-${profile.name.replace(/\s+/g, '-')}.png`;
-      link.href = image;
-      link.click();
+      const imageFile = await getReportImageFile();
+      if (imageFile) {
+        const link = document.createElement('a');
+        link.download = imageFile.name;
+        link.href = URL.createObjectURL(imageFile);
+        link.click();
+      }
     } catch (err) {
-      console.error("Failed to generate image", err);
+      console.error("Download failed", err);
     } finally {
       setIsProcessing(false);
     }
@@ -174,47 +189,33 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
             <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">{t.socialConnector}</h5>
             
             <div className="grid grid-cols-4 gap-4">
-              <button 
-                onClick={handleShareLine}
-                className="flex flex-col items-center space-y-1 group"
-              >
-                <div className="w-12 h-12 bg-[#00B900] rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                  <span className="font-bold text-lg">L</span>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-500">{t.shareLine}</span>
-              </button>
-
-              <button 
-                onClick={handleShareFacebook}
-                className="flex flex-col items-center space-y-1 group"
-              >
-                <div className="w-12 h-12 bg-[#1877F2] rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                  <span className="font-bold text-lg">F</span>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-500">{t.shareFacebook}</span>
-              </button>
-
-              <button 
-                onClick={handleShareX}
-                className="flex flex-col items-center space-y-1 group"
-              >
-                <div className="w-12 h-12 bg-[#000000] rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                  <span className="font-bold text-lg">X</span>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-500">{t.shareX}</span>
-              </button>
-
-              <button 
-                onClick={handleWebShare}
-                className="flex flex-col items-center space-y-1 group"
-              >
-                <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 shadow-md group-hover:scale-110 transition-transform border border-slate-200">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6a3 3 0 100-2.684m0 2.684l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-500">{t.shareWeb}</span>
-              </button>
+              {[
+                { label: 'LINE', color: '#00B900', icon: 'L' },
+                { label: 'Facebook', color: '#1877F2', icon: 'F' },
+                { label: 'X', color: '#000000', icon: 'X' },
+                { label: t.shareWeb, color: '#64748b', icon: '...' }
+              ].map((btn, idx) => (
+                <button 
+                  key={idx}
+                  onClick={handleDirectShare}
+                  disabled={isProcessing}
+                  className="flex flex-col items-center space-y-1 group disabled:opacity-50"
+                >
+                  <div 
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"
+                    style={{ backgroundColor: btn.color }}
+                  >
+                    {btn.label === t.shareWeb ? (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6a3 3 0 100-2.684m0 2.684l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                      </svg>
+                    ) : (
+                      <span className="font-bold text-lg">{btn.icon}</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-500">{btn.label}</span>
+                </button>
+              ))}
             </div>
 
             <div className="flex gap-3">

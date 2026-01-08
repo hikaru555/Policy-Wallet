@@ -20,30 +20,47 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   const [basicInfo, setBasicInfo] = useState({
     company: INSURANCE_COMPANIES[0],
     planName: '',
-    premiumAmount: '',
+    premiumAmount: '', // Formatted string
     dueDate: '',
     frequency: PaymentFrequency.YEARLY,
   });
 
-  const [coverages, setCoverages] = useState<PolicyCoverage[]>([
-    { type: CoverageType.LIFE, sumAssured: 0 }
+  const [coverages, setCoverages] = useState<any[]>([
+    { type: CoverageType.LIFE, sumAssured: '' } // sumAssured as string for formatting
   ]);
+
+  const formatWithCommas = (value: string | number) => {
+    if (value === undefined || value === null || value === '') return '';
+    const stringValue = value.toString().replace(/,/g, '');
+    if (isNaN(Number(stringValue))) return stringValue;
+    const parts = stringValue.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
+  const parseCommas = (value: string) => {
+    return value.replace(/,/g, '');
+  };
 
   useEffect(() => {
     if (initialPolicy) {
       setBasicInfo({
         company: initialPolicy.company,
         planName: initialPolicy.planName,
-        premiumAmount: initialPolicy.premiumAmount.toString(),
+        premiumAmount: formatWithCommas(initialPolicy.premiumAmount.toString()),
         dueDate: initialPolicy.dueDate,
         frequency: initialPolicy.frequency || PaymentFrequency.YEARLY,
       });
-      setCoverages(initialPolicy.coverages);
+      setCoverages(initialPolicy.coverages.map(c => ({
+        ...c,
+        sumAssured: formatWithCommas(c.sumAssured),
+        roomRate: c.roomRate ? formatWithCommas(c.roomRate) : ''
+      })));
     }
   }, [initialPolicy]);
 
   const addCoverage = () => {
-    setCoverages([...coverages, { type: CoverageType.HEALTH, sumAssured: 0 }]);
+    setCoverages([...coverages, { type: CoverageType.HEALTH, sumAssured: '', roomRate: '' }]);
   };
 
   const removeCoverage = (index: number) => {
@@ -52,20 +69,23 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
     }
   };
 
-  const updateCoverage = (index: number, field: keyof PolicyCoverage, value: any) => {
+  const updateCoverage = (index: number, field: string, value: string) => {
     const updated = [...coverages];
-    let validatedValue = value;
-    if ((field === 'sumAssured' || field === 'roomRate') && value !== '') {
-      validatedValue = Math.max(0, Number(value));
+    if (field === 'sumAssured' || field === 'roomRate') {
+      const rawValue = parseCommas(value);
+      if (rawValue === '' || !isNaN(Number(rawValue))) {
+        updated[index] = { ...updated[index], [field]: formatWithCommas(rawValue) };
+      }
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
     }
-    updated[index] = { ...updated[index], [field]: validatedValue };
     setCoverages(updated);
   };
 
   const handlePremiumChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value === '' || Number(value) >= 0) {
-      setBasicInfo({ ...basicInfo, premiumAmount: value });
+    const rawValue = parseCommas(e.target.value);
+    if (rawValue === '' || !isNaN(Number(rawValue))) {
+      setBasicInfo({ ...basicInfo, premiumAmount: formatWithCommas(rawValue) });
     }
   };
 
@@ -83,12 +103,16 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
         setBasicInfo({
           company: extractedData.company || INSURANCE_COMPANIES[0],
           planName: extractedData.planName || '',
-          premiumAmount: extractedData.premiumAmount?.toString() || '',
+          premiumAmount: formatWithCommas(extractedData.premiumAmount?.toString() || ''),
           dueDate: extractedData.dueDate || '',
           frequency: (extractedData.frequency as PaymentFrequency) || PaymentFrequency.YEARLY,
         });
         if (extractedData.coverages && extractedData.coverages.length > 0) {
-          setCoverages(extractedData.coverages as PolicyCoverage[]);
+          setCoverages(extractedData.coverages.map((c: any) => ({
+            ...c,
+            sumAssured: formatWithCommas(c.sumAssured),
+            roomRate: c.roomRate ? formatWithCommas(c.roomRate) : ''
+          })));
         }
       } else {
         alert(lang === 'en' ? "Failed to scan policy. Please try again or enter manually." : "การสแกนล้มเหลว โปรดลองอีกครั้งหรือกรอกข้อมูลด้วยตนเอง");
@@ -101,19 +125,20 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (Number(basicInfo.premiumAmount) < 0) return;
+    const premium = Number(parseCommas(basicInfo.premiumAmount));
+    if (isNaN(premium) || premium < 0) return;
 
     const policy: Policy = {
       id: initialPolicy?.id || Math.random().toString(36).substr(2, 9),
       company: basicInfo.company,
       planName: basicInfo.planName,
-      premiumAmount: Math.max(0, Number(basicInfo.premiumAmount)),
+      premiumAmount: premium,
       dueDate: basicInfo.dueDate,
       frequency: basicInfo.frequency,
       coverages: coverages.map(c => ({
-        ...c,
-        sumAssured: Math.max(0, Number(c.sumAssured)),
-        roomRate: c.roomRate ? Math.max(0, Number(c.roomRate)) : undefined
+        type: c.type,
+        sumAssured: Number(parseCommas(c.sumAssured)) || 0,
+        roomRate: c.roomRate ? Number(parseCommas(c.roomRate)) : undefined
       })),
       status: initialPolicy?.status || 'Active',
     };
@@ -177,9 +202,8 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium</label>
             <input 
-              type="number" 
-              min="0"
-              step="any"
+              type="text" 
+              inputMode="decimal"
               className={inputClasses} 
               value={basicInfo.premiumAmount} 
               onChange={handlePremiumChange} 
@@ -240,8 +264,8 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.sumAssured}</label>
                     <input 
-                      type="number" 
-                      min="0"
+                      type="text" 
+                      inputMode="decimal"
                       className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
                       value={c.sumAssured} 
                       onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} 
@@ -251,8 +275,8 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.dailyRoomRate}</label>
                       <input 
-                        type="number" 
-                        min="0"
+                        type="text" 
+                        inputMode="decimal"
                         className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
                         value={c.roomRate || ''} 
                         onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} 

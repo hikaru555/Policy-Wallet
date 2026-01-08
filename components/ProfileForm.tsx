@@ -12,29 +12,46 @@ interface ProfileFormProps {
 const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang }) => {
   const t = translations[lang];
   
-  // Use a local state that allows strings for numeric fields to fix the "cannot delete 0" bug
-  const [formData, setFormData] = useState<UserProfile>(initialProfile);
-  const [incomeStr, setIncomeStr] = useState(initialProfile.annualIncome.toString());
-  const [expenseStr, setExpenseStr] = useState(initialProfile.monthlyExpenses.toString());
-  const [debtStr, setDebtStr] = useState(initialProfile.totalDebt.toString());
+  const formatWithCommas = (value: string | number) => {
+    if (value === undefined || value === null || value === '') return '';
+    const stringValue = value.toString().replace(/,/g, '');
+    if (isNaN(Number(stringValue))) return stringValue;
+    const parts = stringValue.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
 
-  // Keep strings in sync with initialProfile updates if they happen
+  const parseCommas = (value: string) => {
+    return value.replace(/,/g, '');
+  };
+
+  const [formData, setFormData] = useState<UserProfile>(initialProfile);
+  const [incomeStr, setIncomeStr] = useState(formatWithCommas(initialProfile.annualIncome));
+  const [expenseStr, setExpenseStr] = useState(formatWithCommas(initialProfile.monthlyExpenses));
+  const [debtStr, setDebtStr] = useState(formatWithCommas(initialProfile.totalDebt));
+
   useEffect(() => {
     setFormData(initialProfile);
-    setIncomeStr(initialProfile.annualIncome.toString());
-    setExpenseStr(initialProfile.monthlyExpenses.toString());
-    setDebtStr(initialProfile.totalDebt.toString());
+    setIncomeStr(formatWithCommas(initialProfile.annualIncome));
+    setExpenseStr(formatWithCommas(initialProfile.monthlyExpenses));
+    setDebtStr(formatWithCommas(initialProfile.totalDebt));
   }, [initialProfile]);
+
+  const handleNumericChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = parseCommas(e.target.value);
+    if (rawValue === '' || !isNaN(Number(rawValue))) {
+      setter(formatWithCommas(rawValue));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Convert strings back to numbers for the final save
     const finalProfile: UserProfile = {
       ...formData,
-      annualIncome: parseInt(incomeStr) || 0,
-      monthlyExpenses: parseInt(expenseStr) || 0,
-      totalDebt: parseInt(debtStr) || 0
+      annualIncome: parseInt(parseCommas(incomeStr)) || 0,
+      monthlyExpenses: parseInt(parseCommas(expenseStr)) || 0,
+      totalDebt: parseInt(parseCommas(debtStr)) || 0
     };
     
     onSave(finalProfile);
@@ -121,11 +138,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
                 <input 
-                  type="number" 
-                  min="0" 
+                  type="text" 
+                  inputMode="decimal"
                   className={`${inputClasses} pl-8`} 
                   value={incomeStr} 
-                  onChange={(e) => setIncomeStr(e.target.value)} 
+                  onChange={handleNumericChange(setIncomeStr)} 
                 />
               </div>
             </div>
@@ -134,11 +151,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
                 <input 
-                  type="number" 
-                  min="0" 
+                  type="text" 
+                  inputMode="decimal"
                   className={`${inputClasses} pl-8`} 
                   value={expenseStr} 
-                  onChange={(e) => setExpenseStr(e.target.value)} 
+                  onChange={handleNumericChange(setExpenseStr)} 
                 />
               </div>
             </div>
@@ -147,11 +164,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
                 <input 
-                  type="number" 
-                  min="0" 
+                  type="text" 
+                  inputMode="decimal"
                   className={`${inputClasses} pl-8 text-rose-600 font-bold`} 
                   value={debtStr} 
-                  onChange={(e) => setDebtStr(e.target.value)} 
+                  onChange={handleNumericChange(setDebtStr)} 
                 />
               </div>
             </div>
