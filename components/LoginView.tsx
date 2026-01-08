@@ -12,7 +12,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
   const t = translations[lang];
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
 
   const simulateLogin = (email: string, name: string, picture: string) => {
     let role: UserRole = 'Member';
@@ -49,9 +48,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
 
       // Simulate the network delay of a real Google OAuth handshake (1.5 seconds)
       setTimeout(() => {
-        const demoEmail = isSignUp ? 'new-user@gmail.com' : 'google-user@gmail.com';
-        const demoName = isSignUp ? 'New Member' : 'Google User';
-        const demoPic = `https://ui-avatars.com/api/?name=${isSignUp ? 'New+Member' : 'Google+User'}&background=${isSignUp ? '34A853' : '4285F4'}&color=fff`;
+        const demoEmail = 'google-user@gmail.com';
+        const demoName = 'Google User';
+        const demoPic = `https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff`;
         
         simulateLogin(demoEmail, demoName, demoPic);
         setIsLoading(false);
@@ -99,13 +98,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
                 </div>
               </div>
               <p className="text-sm font-bold text-slate-800 animate-pulse">
-                {lang === 'en' ? 'Syncing Google Profile...' : 'กำลังซิงค์โปรไฟล์ Google...'}
+                {lang === 'en' ? 'Authenticating with Google...' : 'กำลังยืนยันตัวตนด้วย Google...'}
               </p>
             </div>
           )}
 
           {/* Header Content */}
-          <div className="p-10 pb-6 text-center">
+          <div className="p-10 pb-10 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-indigo-100 mb-6 group hover:rotate-6 transition-transform">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 10C20 10 12 13 12 19V25C12 28 16 31 20 32C24 31 28 28 28 25V19C28 13 20 10 20 10Z" fill="white" fillOpacity="0.2" />
@@ -114,27 +113,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
               </svg>
             </div>
             <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2">{t.appName}</h1>
-            <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto mb-8">
-              {isSignUp ? t.signUpSubtitle : t.loginSubtitle}
+            <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto mb-10">
+              {lang === 'en' ? 'The intelligent way to manage and analyze your insurance portfolio.' : 'วิธีที่ชาญฉลาดในการจัดการและวิเคราะห์พอร์ตประกันของคุณ'}
             </p>
-
-            {/* Tab Switcher */}
-            <div className="flex border-b border-slate-100 mb-8">
-              <button 
-                onClick={() => setIsSignUp(false)}
-                className={`flex-1 pb-3 text-xs font-bold uppercase tracking-widest transition-all relative ${!isSignUp ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                Sign In
-                {!isSignUp && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"></div>}
-              </button>
-              <button 
-                onClick={() => setIsSignUp(true)}
-                className={`flex-1 pb-3 text-xs font-bold uppercase tracking-widest transition-all relative ${isSignUp ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                Sign Up
-                {isSignUp && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"></div>}
-              </button>
-            </div>
 
             {error && (
               <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-xs text-rose-600 font-bold mb-6 animate-in slide-in-from-top-2">
@@ -145,7 +126,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
             <button 
               onClick={handleGoogleAuth}
               disabled={isLoading}
-              className="w-full flex items-center justify-center space-x-3 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-[0.98] group"
+              className="w-full flex items-center justify-center space-x-3 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-[0.98] group mb-6"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" className="group-hover:scale-110 transition-transform">
                 <path d="M19.6 10.23c0-.7-.06-1.36-.18-2H10v3.79h5.38c-.23 1.25-.94 2.31-1.99 3.01v2.51h3.23c1.89-1.74 2.98-4.3 2.98-7.31z" fill="#4285F4"/>
@@ -153,14 +134,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
                 <path d="M4.41 11.91c-.2-.6-.31-1.24-.31-1.91s.11-1.31.31-1.91V5.5H1.32C.48 7.15 0 8.98 0 10s.48 2.85 1.32 4.5l3.09-2.59z" fill="#FBBC05"/>
                 <path d="M10 3.96c1.47 0 2.78.5 3.82 1.49l2.86-2.86C14.96.99 12.7 0 10 0 6.22 0 2.97 2.35 1.32 5.5l3.09 2.41c.79-2.36 2.99-4.12 5.59-4.12z" fill="#EA4335"/>
               </svg>
-              <span>{isSignUp ? t.signUpButton : t.loginButton}</span>
+              <span>{lang === 'en' ? 'Continue with Google' : 'ดำเนินการต่อด้วย Google'}</span>
             </button>
 
-            {isSignUp && (
-              <p className="mt-6 text-[10px] text-slate-400 font-medium leading-relaxed px-4">
-                {t.tosAgreement}
-              </p>
-            )}
+            <p className="text-[10px] text-slate-400 font-medium leading-relaxed px-4">
+              {t.tosAgreement}
+            </p>
           </div>
 
           {/* Dev Mode Section */}
