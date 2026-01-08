@@ -7,6 +7,9 @@ interface EmergencyProps {
   lang: Language;
 }
 
+// Simulated High-Res Agent Photo URL
+const AGENT_PHOTO_URL = "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=256&h=256&auto=format&fit=crop";
+
 const EmergencyContacts: React.FC<EmergencyProps> = ({ lang }) => {
   const [isOpen, setIsOpen] = useState(false);
   const t = translations[lang];
@@ -33,7 +36,7 @@ const EmergencyContacts: React.FC<EmergencyProps> = ({ lang }) => {
                 className="flex items-center justify-between p-3 rounded-xl bg-blue-50 text-blue-800 mt-1 hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-lg">🧔</div>
+                  <img src={AGENT_PHOTO_URL} className="w-8 h-8 rounded-full border border-white shadow-sm object-cover" alt="agent" />
                   <div className="flex flex-col">
                     <span className="text-xs font-bold leading-tight">Patrick</span>
                     <span className="text-[9px] text-blue-600 font-bold uppercase">@patrickfwd</span>

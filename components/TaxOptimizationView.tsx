@@ -236,7 +236,7 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
       </div>
 
       <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200">
-        <h5 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-6">Thai Personal Income Tax Brackets 2024</h5>
+        <h5 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-6">Thai Personal Income Tax Brackets</h5>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
           {[
             { range: '0-150k', rate: '0%' },
