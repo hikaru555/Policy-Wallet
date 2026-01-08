@@ -49,7 +49,7 @@ export interface Policy {
   premiumAmount: number;
   dueDate: string; // This is the next due date
   frequency: PaymentFrequency;
-  status: 'Active' | 'Lapsed' | 'Grace Period';
+  status: 'Active' | 'Terminated' | 'Grace Period';
   documentUrl?: string;
   documents?: PolicyDocument[];
 }
@@ -84,3 +84,26 @@ export interface GapAnalysisResult {
   }[];
   recommendations: string[];
 }
+
+/**
+ * Helper to calculate the current status based on the due date
+ */
+export const calculatePolicyStatus = (dueDate: string): Policy['status'] => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+
+  if (today <= due) {
+    return 'Active';
+  }
+
+  const diffTime = Math.abs(today.getTime() - due.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 30) {
+    return 'Grace Period';
+  }
+
+  return 'Terminated';
+};

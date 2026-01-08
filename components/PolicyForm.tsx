@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { CoverageType, Policy, PaymentFrequency, PolicyCoverage } from '../types';
+import { CoverageType, Policy, PaymentFrequency, PolicyCoverage, calculatePolicyStatus } from '../types';
 import { INSURANCE_COMPANIES } from '../constants';
 import { translations, Language } from '../translations';
 import { parsePolicyDocument } from '../services/geminiService';
@@ -140,7 +140,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
         sumAssured: Number(parseCommas(c.sumAssured)) || 0,
         roomRate: c.roomRate ? Number(parseCommas(c.roomRate)) : undefined
       })),
-      status: initialPolicy?.status || 'Active',
+      status: calculatePolicyStatus(basicInfo.dueDate),
     };
     onSubmit(policy);
   };

@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { Policy, CoverageType, PaymentFrequency } from '../types';
+import { Policy, CoverageType, PaymentFrequency, calculatePolicyStatus } from '../types';
 import { translations, Language } from '../translations';
 
 interface DashboardProps {
@@ -15,25 +15,30 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) => {
   const t = translations[lang];
 
-  // Total sum of all sumAssured across all policies and coverages
-  const totalSumAssured = policies.reduce((acc, p) => 
+  // Filter policies that are still providing coverage (Active or Grace Period)
+  const activeAndGracePolicies = useMemo(() => 
+    policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated'),
+  [policies]);
+
+  // Total sum of all sumAssured across active/grace policies
+  const totalSumAssured = activeAndGracePolicies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => cAcc + c.sumAssured, 0), 0);
 
   // Total daily room rate across all health coverages
-  const totalRoomRate = policies.reduce((acc, p) => 
+  const totalRoomRate = activeAndGracePolicies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => cAcc + (c.roomRate || 0), 0), 0);
 
   // Total annual premium
-  const annualPremium = policies.reduce((acc, p) => {
+  const annualPremium = activeAndGracePolicies.reduce((acc, p) => {
     let multiplier = 1;
     if (p.frequency === PaymentFrequency.MONTHLY) multiplier = 12;
     if (p.frequency === PaymentFrequency.QUARTERLY) multiplier = 4;
     return acc + (p.premiumAmount * multiplier);
   }, 0);
 
-  // Group sum assured by coverage type
+  // Group sum assured by coverage type for active/grace policies
   const coverageDataMap = new Map<CoverageType, number>();
-  policies.forEach(p => {
+  activeAndGracePolicies.forEach(p => {
     p.coverages.forEach(c => {
       const current = coverageDataMap.get(c.type) || 0;
       coverageDataMap.set(c.type, current + c.sumAssured);
@@ -73,7 +78,10 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[400px] flex flex-col">
-          <h4 className="font-bold text-lg mb-2">{t.coverageDist}</h4>
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="font-bold text-lg">{t.coverageDist}</h4>
+            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-1 rounded-full font-bold uppercase tracking-widest">Active Only</span>
+          </div>
           
           {chartData.length > 0 ? (
             <>
@@ -123,7 +131,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 opacity-40">
               <span className="text-6xl">🥧</span>
-              <p className="text-sm font-medium">Add policies to view coverage distribution chart</p>
+              <p className="text-sm font-medium">Add active policies to view coverage distribution chart</p>
             </div>
           )}
         </div>
@@ -139,36 +147,39 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
               policies
                 .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
                 .slice(0, 4)
-                .map(p => (
-                  <div key={p.id} onClick={() => onViewDetails(p)} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer group transition-all border border-transparent hover:border-slate-200">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-[10px] text-blue-600 shadow-sm group-hover:scale-105 transition-transform">
-                        {p.company.substring(0, 3).toUpperCase()}
+                .map(p => {
+                  const currentStatus = calculatePolicyStatus(p.dueDate);
+                  return (
+                    <div key={p.id} onClick={() => onViewDetails(p)} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer group transition-all border border-transparent hover:border-slate-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-[10px] text-blue-600 shadow-sm group-hover:scale-105 transition-transform">
+                          {p.company.substring(0, 3).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">{p.planName}</p>
+                          <p className="text-xs text-slate-500">{t.due}: {new Date(p.dueDate).toLocaleDateString()}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm truncate">{p.planName}</p>
-                        <p className="text-xs text-slate-500">{t.due}: {new Date(p.dueDate).toLocaleDateString()}</p>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-bold text-sm">฿{p.premiumAmount.toLocaleString()}</p>
+                        <div className="flex flex-col items-end space-y-1 mt-1">
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold uppercase tracking-tight">
+                            {getFreqLabel(p.frequency)}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                            currentStatus === 'Active' ? 'bg-green-100 text-green-700' : 
+                            currentStatus === 'Grace Period' ? 'bg-amber-100 text-amber-700' : 
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {currentStatus === 'Active' ? t.active : 
+                             currentStatus === 'Grace Period' ? t.gracePeriod : 
+                             currentStatus === 'Terminated' ? t.terminated : currentStatus}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-bold text-sm">฿{p.premiumAmount.toLocaleString()}</p>
-                      <div className="flex flex-col items-end space-y-1 mt-1">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold uppercase tracking-tight">
-                          {getFreqLabel(p.frequency)}
-                        </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                          p.status === 'Active' ? 'bg-green-100 text-green-700' : 
-                          p.status === 'Grace Period' ? 'bg-amber-100 text-amber-700' : 
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {p.status === 'Active' ? t.active : 
-                           p.status === 'Grace Period' ? t.gracePeriod : 
-                           p.status === 'Lapsed' ? t.lapsed : p.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
             )}
           </div>
         </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Policy, UserProfile, CoverageType, PaymentFrequency } from '../types';
+import { Policy, UserProfile, CoverageType, PaymentFrequency, calculatePolicyStatus } from '../types';
 import { translations, Language } from '../translations';
 import { analyzeTaxOptimization } from '../services/geminiService';
 
@@ -21,11 +21,15 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
     estimatedTotalBenefit: number;
   } | null>(null);
 
+  const activePolicies = useMemo(() => 
+    policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated'),
+  [policies]);
+
   const taxMetrics = useMemo(() => {
     let lifeHealthSum = 0;
     let pensionSum = 0;
 
-    policies.forEach(p => {
+    activePolicies.forEach(p => {
       let annualPremium = p.premiumAmount;
       if (p.frequency === PaymentFrequency.MONTHLY) annualPremium *= 12;
       if (p.frequency === PaymentFrequency.QUARTERLY) annualPremium *= 4;
@@ -77,7 +81,7 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
       estSavings,
       totalDeduction
     };
-  }, [policies, profile]);
+  }, [activePolicies, profile]);
 
   const handleRunAiTax = async () => {
     if (!isPro) {
@@ -86,7 +90,7 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
     }
     setLoading(true);
     try {
-      const result = await analyzeTaxOptimization(policies, profile, lang);
+      const result = await analyzeTaxOptimization(activePolicies, profile, lang);
       setAiResult(result);
     } catch (e) {
       alert("Analysis failed");

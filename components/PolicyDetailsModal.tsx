@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Policy, PaymentFrequency } from '../types';
+import { Policy, PaymentFrequency, calculatePolicyStatus } from '../types';
 import { translations, Language } from '../translations';
 
 interface PolicyDetailsModalProps {
@@ -24,6 +24,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose
   }
 
   const totalSumAssured = policy.coverages.reduce((acc, c) => acc + c.sumAssured, 0);
+  const currentStatus = calculatePolicyStatus(policy.dueDate);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -44,8 +45,14 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{t.status}</p>
-              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${policy.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                {policy.status === 'Active' ? t.active : policy.status}
+              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                currentStatus === 'Active' ? 'bg-green-100 text-green-700' : 
+                currentStatus === 'Grace Period' ? 'bg-amber-100 text-amber-700' : 
+                'bg-red-100 text-red-700'
+              }`}>
+                {currentStatus === 'Active' ? t.active : 
+                 currentStatus === 'Grace Period' ? t.gracePeriod : 
+                 currentStatus === 'Terminated' ? t.terminated : currentStatus}
               </span>
             </div>
             <div>

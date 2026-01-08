@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Policy } from '../types';
+import { Policy, calculatePolicyStatus } from '../types';
 import { translations, Language } from '../translations';
 
 interface PolicyListProps {
@@ -34,6 +34,7 @@ const PolicyList: React.FC<PolicyListProps> = ({ policies, onDelete, onEdit, onV
             {policies.map(p => {
               const totalSum = p.coverages.reduce((acc, c) => acc + c.sumAssured, 0);
               const types = p.coverages.map(c => c.type).join(", ");
+              const currentStatus = calculatePolicyStatus(p.dueDate);
               
               return (
                 <tr key={p.id} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => onViewDetails?.(p)}>
@@ -48,8 +49,14 @@ const PolicyList: React.FC<PolicyListProps> = ({ policies, onDelete, onEdit, onV
                   </td>
                   <td className="px-6 py-4 font-medium">฿{totalSum.toLocaleString()}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${p.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {p.status === 'Active' ? t.active : p.status}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      currentStatus === 'Active' ? 'bg-green-100 text-green-800' : 
+                      currentStatus === 'Grace Period' ? 'bg-amber-100 text-amber-800' : 
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {currentStatus === 'Active' ? t.active : 
+                       currentStatus === 'Grace Period' ? t.gracePeriod : 
+                       currentStatus === 'Terminated' ? t.terminated : currentStatus}
                     </span>
                   </td>
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>

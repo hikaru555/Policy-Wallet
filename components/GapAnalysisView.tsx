@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { GapAnalysisResult, Policy, UserProfile } from '../types';
+import { GapAnalysisResult, Policy, UserProfile, calculatePolicyStatus } from '../types';
 import { analyzeCoverageGaps } from '../services/geminiService';
 import { translations, Language } from '../translations';
 
@@ -18,8 +18,11 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
 
   const handleRunAnalysis = async () => {
     setLoading(true);
+    // Filter out Terminated policies so AI doesn't count them as existing coverage
+    const activePolicies = policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated');
+    
     try {
-      const res = await analyzeCoverageGaps(policies, profile, lang);
+      const res = await analyzeCoverageGaps(activePolicies, profile, lang);
       setResult(res);
       if (onAnalysisComplete && res.score !== undefined) {
         onAnalysisComplete(res.score);
@@ -47,12 +50,14 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
     window.open('https://line.me/ti/p/@patrickfwd', '_blank');
   };
 
+  const activeCount = policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated').length;
+
   return (
     <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 pb-6 border-b border-slate-50">
         <div>
           <h4 className="font-bold text-2xl text-slate-800">{t.analysis}</h4>
-          <p className="text-sm text-slate-500 mt-1">Smart portfolio review based on your profile and {policies.length} policies.</p>
+          <p className="text-sm text-slate-500 mt-1">Smart portfolio review based on your profile and {activeCount} active policies.</p>
         </div>
         <button
           onClick={handleRunAnalysis}
@@ -73,6 +78,11 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
           <p className="text-slate-400 max-w-sm mx-auto text-sm">
             Our AI will evaluate your total sum assured, room rates, and critical illness coverage against your financial liabilities.
           </p>
+          {policies.some(p => calculatePolicyStatus(p.dueDate) === 'Terminated') && (
+            <p className="mt-4 text-[10px] text-amber-600 font-bold uppercase tracking-widest italic">
+              Note: Terminated policies are excluded from analysis.
+            </p>
+          )}
         </div>
       )}
 
