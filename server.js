@@ -21,6 +21,7 @@ const dbConfig = {
   user: 'policywallet',
   password: '.E9iAtlC[I5;g&<3',
   database: 'policywallet',
+  // In production (GCP Cloud Run), we connect via the Unix socket path provided by the Cloud SQL Auth Proxy.
   host: isProduction ? `/cloudsql/${CLOUD_SQL_CONNECTION_NAME}` : 'localhost',
   port: 5432,
   connectionTimeoutMillis: 5000, 
@@ -42,6 +43,7 @@ const initDb = async () => {
   if (!pool) return;
   try {
     const client = await pool.connect();
+    // Create users table with JSONB columns for flexible data storage
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -51,7 +53,7 @@ const initDb = async () => {
       )
     `);
     client.release();
-    console.log('✅ PostgreSQL Schema Ready');
+    console.log('✅ PostgreSQL Schema Ready and Verified');
   } catch (err) {
     console.error('❌ DB Init Failed:', err.message);
   }
@@ -62,7 +64,41 @@ initDb();
 
 app.get('/api/ping', (req, res) => res.json({ status: 'pong' }));
 
-// Portfolio Data
+// Health check for Admin Console
+app.get('/api/admin/health', async (req, res) => {
+  const health = {
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    database: 'checking',
+    storage: 'checking',
+    environment: isProduction ? 'production' : 'development',
+    bucket: BUCKET_NAME
+  };
+
+  if (pool) {
+    try {
+      await pool.query('SELECT 1');
+      health.database = 'connected';
+    } catch (err) {
+      health.database = 'error';
+      health.dbError = err.message;
+    }
+  }
+
+  if (storage) {
+    try {
+      const [exists] = await bucket.exists();
+      health.storage = exists ? 'connected' : 'bucket_not_found';
+    } catch (err) {
+      health.storage = 'error';
+      health.storageError = err.message;
+    }
+  }
+
+  res.json(health);
+});
+
+// Portfolio Data Retrieval
 app.get('/api/portfolio/:userId', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'DB Unavailable' });
   try {
@@ -73,12 +109,14 @@ app.get('/api/portfolio/:userId', async (req, res) => {
   }
 });
 
+// Policies Sync (Atomic Update)
 app.post('/api/policies/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
   if (!userId || !pool) return res.status(400).json({ error: 'Bad Request' });
   try {
     await pool.query(`
-      INSERT INTO users (id, policies, last_sync) VALUES ($1, $2, NOW()) 
+      INSERT INTO users (id, policies, last_sync) 
+      VALUES ($1, $2, NOW()) 
       ON CONFLICT (id) DO UPDATE SET policies = EXCLUDED.policies, last_sync = NOW()
     `, [userId, JSON.stringify(req.body.policies)]);
     res.json({ success: true });
@@ -87,12 +125,14 @@ app.post('/api/policies/sync', async (req, res) => {
   }
 });
 
+// Profile Sync (Atomic Update)
 app.post('/api/profile/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
   if (!userId || !pool) return res.status(400).json({ error: 'Bad Request' });
   try {
     await pool.query(`
-      INSERT INTO users (id, profile, last_sync) VALUES ($1, $2, NOW()) 
+      INSERT INTO users (id, profile, last_sync) 
+      VALUES ($1, $2, NOW()) 
       ON CONFLICT (id) DO UPDATE SET profile = EXCLUDED.profile, last_sync = NOW()
     `, [userId, JSON.stringify(req.body.profile)]);
     res.json({ success: true });
@@ -111,7 +151,7 @@ app.post('/api/vault/upload', upload.single('file'), async (req, res) => {
     const blobStream = blob.createWriteStream({
       resumable: false,
       contentType: req.file.mimetype,
-      public: true, // Make publicly accessible for the wallet summary feature
+      public: true, 
     });
 
     blobStream.on('error', (err) => res.status(500).json({ error: err.message }));
@@ -127,7 +167,7 @@ app.post('/api/vault/upload', upload.single('file'), async (req, res) => {
 });
 
 app.delete('/api/vault/delete', async (req, res) => {
-  const { fileName } = req.body; // Path relative to bucket
+  const { fileName } = req.body; 
   if (!fileName) return res.status(400).json({ error: 'Missing filename' });
   try {
     await bucket.file(fileName).delete();
@@ -137,7 +177,7 @@ app.delete('/api/vault/delete', async (req, res) => {
   }
 });
 
-// Static Serving for SPA
+// Static Serving for Frontend
 app.use(express.static(__dirname));
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
@@ -145,4 +185,4 @@ app.get('*', (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Cloud Bridge listening on ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Database Bridge Active on ${PORT}`));

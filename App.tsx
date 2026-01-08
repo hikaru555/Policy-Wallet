@@ -68,7 +68,7 @@ const App: React.FC = () => {
   const [policyIdToDelete, setPolicyIdToDelete] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // 1. Initial Data Hydration
+  // 1. Initial Data Hydration: Pull from Database first, then fallback to Local
   useEffect(() => {
     const initData = async () => {
       setDataLoaded(false);
@@ -87,6 +87,7 @@ const App: React.FC = () => {
         setIsGuestLoading(false);
       }
 
+      // Load Local Cache immediately for better UX
       const savedPolicies = localStorage.getItem('pw_policies');
       const savedProfile = localStorage.getItem('pw_profile');
       const savedScore = localStorage.getItem('pw_protection_score');
@@ -103,47 +104,56 @@ const App: React.FC = () => {
         try {
           const cloudData = await cloudSyncService.getFullData(user.id);
           if (cloudData && (cloudData.policies?.length > 0 || cloudData.profile)) {
-            if (cloudData.policies) {
-              setPolicies(cloudData.policies);
-              localStorage.setItem('pw_policies', JSON.stringify(cloudData.policies));
-            }
-            if (cloudData.profile) {
-              setProfile(cloudData.profile);
-              localStorage.setItem('pw_profile', JSON.stringify(cloudData.profile));
-            }
+            // Cloud has data: Sync local cache to cloud state
+            setPolicies(cloudData.policies || []);
+            setProfile(cloudData.profile || null);
+            localStorage.setItem('pw_policies', JSON.stringify(cloudData.policies));
+            if (cloudData.profile) localStorage.setItem('pw_profile', JSON.stringify(cloudData.profile));
             setIsCloudSynced(true);
           } else if (localPolicies.length > 0 || localProfile) {
+            // Cloud empty, local has data: Perform migration to DB
             const pSuccess = await cloudSyncService.savePolicies(user.id, localPolicies);
             const prSuccess = localProfile ? await cloudSyncService.saveProfile(user.id, localProfile) : true;
             setIsCloudSynced(pSuccess && prSuccess);
           }
         } catch (err) {
+          console.error("Initial Cloud Fetch Failed:", err);
           setIsCloudSynced(false);
         } finally {
           setIsSyncing(false);
+          setDataLoaded(true);
         }
+      } else {
+        setDataLoaded(true);
       }
-      setDataLoaded(true);
     };
     initData();
   }, [user?.id]);
 
-  // 2. Debounced Automatic Sync
+  // 2. Continuous Synchronization Effect
+  // This effect watches for ANY change in policies or profile and records it to the database.
   useEffect(() => {
     if (!dataLoaded) return;
+
+    // 1. Update Local Storage for offline persistence
     localStorage.setItem('pw_policies', JSON.stringify(policies));
     if (profile) localStorage.setItem('pw_profile', JSON.stringify(profile));
 
+    // 2. Sync with Cloud SQL with Debounce (Avoid spamming on quick edits)
     if (user) {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      
+      setIsSyncing(true); // Show immediate sync feedback
+      
       syncTimeoutRef.current = setTimeout(async () => {
-        setIsSyncing(true);
         try {
           const pSuccess = await cloudSyncService.savePolicies(user.id, policies);
           let prSuccess = true;
           if (profile) prSuccess = await cloudSyncService.saveProfile(user.id, profile);
+          
           setIsCloudSynced(pSuccess && prSuccess);
         } catch (err) {
+          console.error("Cloud Sync Error:", err);
           setIsCloudSynced(false);
         } finally {
           setIsSyncing(false);
@@ -175,16 +185,10 @@ const App: React.FC = () => {
     setActiveTab('overview');
     setIsCloudSynced(false);
     setIsMobileMenuOpen(false);
+    setDataLoaded(false);
   };
 
-  const handleDeletePolicy = (id: string) => setPolicyIdToDelete(id);
-
-  const confirmDeletePolicy = () => {
-    if (policyIdToDelete) {
-      setPolicies(prev => prev.filter(p => p.id !== policyIdToDelete));
-      setPolicyIdToDelete(null);
-    }
-  };
+  // CRUD HANDLERS (Database persistence is handled by the Effect above)
 
   const handleSavePolicy = (policy: Policy) => {
     if (editingPolicy) {
@@ -203,17 +207,13 @@ const App: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const toggleAddingPolicy = () => {
-    setActiveTab('policies');
-    setIsAddingPolicy(!isAddingPolicy);
-    setEditingPolicy(null);
-    setIsMobileMenuOpen(false);
-  };
+  const handleDeletePolicy = (id: string) => setPolicyIdToDelete(id);
 
-  const handleImportPortfolio = (data: { profile: UserProfile, policies: Policy[] }) => {
-    setProfile(data.profile);
-    setPolicies(data.policies);
-    setProtectionScore(null); 
+  const confirmDeletePolicy = () => {
+    if (policyIdToDelete) {
+      setPolicies(prev => prev.filter(p => p.id !== policyIdToDelete));
+      setPolicyIdToDelete(null);
+    }
   };
 
   const handleUploadDocument = async (policyId: string, doc: PolicyDocument) => {
@@ -239,6 +239,19 @@ const App: React.FC = () => {
       }
       return p;
     }));
+  };
+
+  const toggleAddingPolicy = () => {
+    setActiveTab('policies');
+    setIsAddingPolicy(!isAddingPolicy);
+    setEditingPolicy(null);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleImportPortfolio = (data: { profile: UserProfile, policies: Policy[] }) => {
+    setProfile(data.profile);
+    setPolicies(data.policies);
+    setProtectionScore(null); 
   };
 
   const handleConnectLine = () => window.open('https://line.me/ti/p/@patrickfwd', '_blank');
@@ -267,42 +280,16 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center space-x-3">
-          <AppLogo className="w-8 h-8" id="mobile-bar" />
-          <h1 className="text-lg font-bold tracking-tight text-slate-800">{t.appName}</h1>
-        </div>
-        <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
-
-      {isMobileMenuOpen && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />}
-
+      {/* Sidebar and Navigation */}
       <aside className={`fixed inset-y-0 left-0 z-[60] w-72 bg-white border-r border-slate-200 flex flex-col p-4 space-y-6 transform transition-transform duration-300 md:relative md:translate-x-0 md:w-64 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center space-x-3">
             <AppLogo id="desktop-sidebar" />
-            <h1 className="text-xl font-bold text-slate-800">{t.appName}</h1>
+            <h1 className="text-xl font-bold text-slate-800 tracking-tight">{t.appName}</h1>
           </div>
           <button onClick={() => setLang(lang === 'en' ? 'th' : 'en')} className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded">
             {lang === 'en' ? 'TH' : 'EN'}
           </button>
-        </div>
-
-        <div className="px-2">
-          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 relative group transition-all hover:bg-slate-100/50">
-            <div className="flex items-center space-x-3">
-              <img src={user.picture} className="w-10 h-10 rounded-full border border-white shadow-sm" alt={user.name} />
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-slate-800 truncate">{user.name}</p>
-                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${user.role === 'Admin' ? 'bg-indigo-100 text-indigo-700' : user.role === 'Pro-Member' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>{user.role}</span>
-              </div>
-            </div>
-            <button onClick={handleLogout} className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
-          </div>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto">
@@ -320,40 +307,53 @@ const App: React.FC = () => {
             </button>
           )}
 
+          {/* CLOUD DATABASE SYNC STATUS */}
           <div className="pt-4 mt-4 border-t border-slate-100">
-            <div className={`px-4 py-3 rounded-xl border transition-all mb-2 ${isSyncing ? 'bg-blue-50 border-blue-100' : isCloudSynced ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+            <div className={`px-4 py-3 rounded-xl border transition-all mb-2 ${
+              isSyncing ? 'bg-blue-50 border-blue-100 shadow-sm' : 
+              isCloudSynced ? 'bg-emerald-50 border-emerald-100' : 
+              'bg-amber-50 border-amber-100'
+            }`}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.syncStatus}</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-blue-500 animate-ping' : isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  isSyncing ? 'bg-blue-500 animate-ping' : 
+                  isCloudSynced ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 
+                  'bg-amber-500 animate-pulse'
+                }`}></span>
               </div>
-              <p className={`text-[10px] font-black uppercase tracking-tighter ${isSyncing ? 'text-blue-700' : isCloudSynced ? 'text-emerald-700' : 'text-amber-700'}`}>
-                {isSyncing ? 'Syncing...' : isCloudSynced ? t.cloudSync : t.localStorage}
+              <p className={`text-[10px] font-black uppercase tracking-tighter ${
+                isSyncing ? 'text-blue-700' : 
+                isCloudSynced ? 'text-emerald-700' : 
+                'text-amber-700'
+              }`}>
+                {isSyncing ? 'Recording to DB...' : isCloudSynced ? t.cloudSync : t.localStorage}
               </p>
             </div>
           </div>
         </nav>
 
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mt-auto">
-          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Consultant</p>
-          <div className="flex items-center space-x-3 mt-2">
-            <img src={AGENT_PHOTO_URL} className="w-8 h-8 rounded-full border border-white shadow-sm object-cover" alt="agent" />
-            <div>
-              <p className="text-xs font-bold text-slate-800">Patrick</p>
-              <p className="text-[10px] text-slate-500">คลินิกประกัน FWD</p>
+          <div className="flex items-center space-x-3">
+            <img src={user.picture} className="w-8 h-8 rounded-full border" alt="" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-slate-800 truncate">{user.name}</p>
+              <button onClick={handleLogout} className="text-[9px] font-bold text-red-500 hover:underline">{t.logout}</button>
             </div>
           </div>
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <main className="flex-1 p-4 md:p-10 space-y-8 overflow-y-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 capitalize tracking-tight">{activeTab}</h2>
+            <h2 className="text-2xl font-black text-slate-900 capitalize tracking-tight">{activeTab}</h2>
             <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{user.name}</b></p>
           </div>
           <div className="flex items-center space-x-3">
-            {activeTab === 'overview' && policies.length > 0 && <button onClick={() => setIsShareModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-md">{t.shareReport}</button>}
-            {(activeTab === 'overview' || activeTab === 'policies') && <button onClick={toggleAddingPolicy} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm">{(isAddingPolicy || editingPolicy) ? t.cancel : `+ ${t.addPolicy}`}</button>}
+            {activeTab === 'overview' && policies.length > 0 && <button onClick={() => setIsShareModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-md active:scale-95">{t.shareReport}</button>}
+            {(activeTab === 'overview' || activeTab === 'policies') && <button onClick={toggleAddingPolicy} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm active:scale-95">{(isAddingPolicy || editingPolicy) ? t.cancel : `+ ${t.addPolicy}`}</button>}
           </div>
         </header>
 
@@ -370,25 +370,14 @@ const App: React.FC = () => {
                       <p className="text-blue-100 text-sm mb-4 leading-relaxed">{t.lineDesc}</p>
                       <button onClick={handleConnectLine} className="w-full py-2.5 bg-white text-blue-600 rounded-lg font-bold text-sm shadow-lg">{t.connectLine}</button>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                        <div className="flex items-center justify-between mb-6">
-                          <h5 className="font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">{t.healthIndex}</h5>
-                          <div className={`w-2 h-2 rounded-full ${protectionScore !== null ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                        </div>
-                        <div className="flex items-end justify-between mb-4">
-                          <p className="text-4xl font-black text-slate-900 tabular-nums">{protectionScore !== null ? `${protectionScore}%` : '--%'}</p>
-                          <span className="text-2xl">🛡️</span>
-                        </div>
-                        <button onClick={() => handleTabChange('analysis')} className="w-full mt-6 py-2.5 bg-slate-50 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100">{protectionScore !== null ? 'Re-run Analysis →' : 'View AI Breakdown →'}</button>
-                     </div>
                   </div>
                 </div>
               </>
             ) : (
               <div className="text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
                 <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6"><span className="text-5xl">📁</span></div>
-                <h3 className="text-2xl font-black text-slate-800 mb-2">No policies yet</h3>
-                <button onClick={toggleAddingPolicy} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-100">+ Add Your First Policy</button>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">No policies found</h3>
+                <button onClick={toggleAddingPolicy} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl">+ Add to Database</button>
               </div>
             )}
           </div>
