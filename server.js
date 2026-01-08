@@ -182,6 +182,7 @@ app.get('*', (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 8080;
+// CRITICAL: Listen on 0.0.0.0 for container accessibility
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 Policy Wallet Bridge listening on port ${PORT} (Mode: ${process.env.NODE_ENV || 'development'})`);
   initDb();
