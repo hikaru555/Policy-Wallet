@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { CoverageType, Policy, PaymentFrequency, PolicyCoverage, calculatePolicyStatus } from '../types';
 import { INSURANCE_COMPANIES } from '../constants';
@@ -214,14 +215,17 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium *</label>
-            <input 
-              type="text" 
-              inputMode="decimal"
-              className={inputClasses} 
-              value={basicInfo.premiumAmount} 
-              onChange={handlePremiumChange} 
-              required
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
+              <input 
+                type="text" 
+                inputMode="decimal"
+                className={`${inputClasses} pl-8`} 
+                value={basicInfo.premiumAmount} 
+                onChange={handlePremiumChange} 
+                required
+              />
+            </div>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.frequency}</label>
@@ -237,13 +241,20 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date *</label>
-            <input 
-              type="date" 
-              className={inputClasses} 
-              value={basicInfo.dueDate} 
-              onChange={(e) => setBasicInfo({ ...basicInfo, dueDate: e.target.value })} 
-              required
-            />
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <input 
+                type="date" 
+                className={`${inputClasses} pl-10 appearance-none`} 
+                value={basicInfo.dueDate} 
+                onChange={(e) => setBasicInfo({ ...basicInfo, dueDate: e.target.value })} 
+                required
+              />
+            </div>
           </div>
         </div>
 
@@ -278,25 +289,31 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.sumAssured}</label>
-                    <input 
-                      type="text" 
-                      inputMode="decimal"
-                      className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
-                      value={c.sumAssured} 
-                      onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} 
-                    />
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span>
+                      <input 
+                        type="text" 
+                        inputMode="decimal"
+                        className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
+                        value={c.sumAssured} 
+                        onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} 
+                      />
+                    </div>
                   </div>
                   {(c.type === CoverageType.HEALTH || (c.type as any) === 'Health Insurance') && (
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.dailyRoomRate}</label>
-                      <input 
-                        type="text" 
-                        inputMode="decimal"
-                        className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={c.roomRate || ''} 
-                        onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} 
-                        placeholder="Optional"
-                      />
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span>
+                        <input 
+                          type="text" 
+                          inputMode="decimal"
+                          className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
+                          value={c.roomRate || ''} 
+                          onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} 
+                          placeholder="Optional"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
