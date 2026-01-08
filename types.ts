@@ -67,15 +67,9 @@ export interface UserProfile {
   familyNotes?: string;
 }
 
-export interface Client {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  policies: Policy[];
-  profile?: UserProfile;
-}
-
+/**
+ * Added missing GapAnalysisResult interface for AI analysis output
+ */
 export interface GapAnalysisResult {
   score: number;
   gaps: {
@@ -86,9 +80,18 @@ export interface GapAnalysisResult {
   recommendations: string[];
 }
 
-/**
- * Helper to calculate the current status based on the due date
- */
+export interface UnderwritingResult {
+  riskLevel: 'Standard' | 'Sub-standard' | 'Postpone' | 'Decline';
+  assessment: string;
+  reasons: string[];
+  additionalRequirements: string[];
+}
+
+export interface UsageStats {
+  date: string;
+  count: number;
+}
+
 export const calculatePolicyStatus = (dueDate: string): Policy['status'] => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

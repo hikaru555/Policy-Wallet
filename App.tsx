@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument, User, UserRole } from './types';
 import { translations, Language } from './translations';
@@ -15,6 +16,7 @@ import TaxOptimizationView from './components/TaxOptimizationView';
 import LoginView from './components/LoginView';
 import AdminConsole from './components/AdminConsole';
 import ProtectionIndex from './components/ProtectionIndex';
+import PreUnderwritingView from './components/PreUnderwritingView';
 import { storageManager, STORAGE_KEYS } from './services/storageManager';
 
 // Initialize Versioned Storage
@@ -49,7 +51,7 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(() => storageManager.load<UserProfile | null>(STORAGE_KEYS.PROFILE, null));
   const [protectionScore, setProtectionScore] = useState<number | null>(() => storageManager.load<number | null>(STORAGE_KEYS.SCORE, null));
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile' | 'admin'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'underwriting' | 'vault' | 'profile' | 'admin'>('overview');
   const [isAddingPolicy, setIsAddingPolicy] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
   const [viewingPolicy, setViewingPolicy] = useState<Policy | null>(null);
@@ -189,10 +191,10 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto">
-          {['overview', 'policies', 'analysis', 'tax', 'profile', 'vault'].map(tabId => (
+          {['overview', 'policies', 'analysis', 'tax', 'underwriting', 'profile', 'vault'].map(tabId => (
             <button key={tabId} onClick={() => handleTabChange(tabId)} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === tabId ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50'}`}>
               <span className="text-lg">
-                {tabId === 'overview' ? '📊' : tabId === 'policies' ? '📄' : tabId === 'analysis' ? '🤖' : tabId === 'tax' ? '💰' : tabId === 'profile' ? '👤' : '🛡️'}
+                {tabId === 'overview' ? '📊' : tabId === 'policies' ? '📄' : tabId === 'analysis' ? '🤖' : tabId === 'tax' ? '💰' : tabId === 'underwriting' ? '🩺' : tabId === 'profile' ? '👤' : '🛡️'}
               </span>
               <span>{t[tabId as keyof typeof t] || tabId}</span>
             </button>
@@ -316,6 +318,7 @@ const App: React.FC = () => {
 
         {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} /> : <ProfileRequiredView />)}
         {activeTab === 'tax' && (profile ? <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} /> : <ProfileRequiredView />)}
+        {activeTab === 'underwriting' && <PreUnderwritingView user={user} lang={lang} isPro={isPro} />}
         {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={setProfile} lang={lang} policies={policies} onImport={handleImportPortfolio} isPro={isPro} />}
         {activeTab === 'vault' && <VaultView policies={policies} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} lang={lang} isPro={isPro} user={user} />}
         {activeTab === 'admin' && <AdminConsole currentUser={user} lang={lang} />}

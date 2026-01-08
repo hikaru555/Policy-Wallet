@@ -1,8 +1,8 @@
 
-import { Policy, UserProfile, User } from '../types';
+import { Policy, UserProfile, User, UsageStats } from '../types';
 
 const APP_PREFIX = 'pw_';
-const CURRENT_VERSION = '1.1.0'; // Increment this when changing data schemas
+const CURRENT_VERSION = '1.2.0'; 
 
 export const STORAGE_KEYS = {
   POLICIES: `${APP_PREFIX}policies`,
@@ -10,13 +10,11 @@ export const STORAGE_KEYS = {
   SCORE: `${APP_PREFIX}protection_score`,
   SESSION: `${APP_PREFIX}session`,
   VERSION: `${APP_PREFIX}data_version`,
-  USERS: `${APP_PREFIX}users`
+  USERS: `${APP_PREFIX}users`,
+  UNDERWRITING_USAGE: `${APP_PREFIX}underwriting_usage`
 };
 
 export const storageManager = {
-  /**
-   * Initializes storage and handles version migrations if necessary
-   */
   init() {
     const storedVersion = localStorage.getItem(STORAGE_KEYS.VERSION);
     
@@ -26,9 +24,6 @@ export const storageManager = {
     }
 
     if (storedVersion !== CURRENT_VERSION) {
-      console.log(`Migrating data from ${storedVersion} to ${CURRENT_VERSION}`);
-      // Migration logic would go here if fields in Policy or Profile change
-      // For now, we just update the version tag
       localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
     }
   },
@@ -51,6 +46,26 @@ export const storageManager = {
       console.error(`Failed to load from storage: ${key}. Returning default.`, e);
       return defaultValue;
     }
+  },
+
+  getUnderwritingUsage(): UsageStats {
+    const today = new Date().toISOString().split('T')[0];
+    // Fix: Solely rely on storageManager reference instead of "this" to satisfy TypeScript generic constraints in object literal
+    const saved = storageManager.load<UsageStats | null>(STORAGE_KEYS.UNDERWRITING_USAGE, null);
+    
+    if (!saved || saved.date !== today) {
+      const reset = { date: today, count: 0 };
+      storageManager.save(STORAGE_KEYS.UNDERWRITING_USAGE, reset);
+      return reset;
+    }
+    return saved;
+  },
+
+  incrementUnderwritingUsage(): void {
+    // Fix: Solely rely on storageManager reference instead of "this"
+    const stats = storageManager.getUnderwritingUsage();
+    stats.count += 1;
+    storageManager.save(STORAGE_KEYS.UNDERWRITING_USAGE, stats);
   },
 
   clearSession(): void {
