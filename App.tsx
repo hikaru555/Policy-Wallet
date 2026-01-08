@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument, User, UserRole } from './types';
 import { translations, Language } from './translations';
@@ -275,10 +274,19 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2"><PolicyList policies={policies} onDelete={handleDeletePolicy} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} /></div>
                   <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white shadow-xl relative overflow-hidden">
-                      <h5 className="font-bold text-lg mb-2">{t.lineSync}</h5>
-                      <p className="text-blue-100 text-sm mb-4 leading-relaxed">{t.lineDesc}</p>
-                      <button onClick={handleConnectLine} className="w-full py-2.5 bg-white text-blue-600 rounded-lg font-bold text-sm shadow-lg">{t.connectLine}</button>
+                    {/* Connect with Patrick Card - Minimal Style (No Logo) */}
+                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden flex flex-col items-center text-center">
+                      <div className="mb-4">
+                        <h5 className="font-black text-slate-900 text-lg leading-tight mb-1">{t.lineSync}</h5>
+                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{lang === 'en' ? 'FWD Insurance Clinic' : 'คลินิกประกัน FWD'}</p>
+                      </div>
+                      
+                      <button 
+                        onClick={handleConnectLine} 
+                        className="w-full py-3.5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-2xl font-black text-sm shadow-xl shadow-green-50 transition-all active:scale-95 flex items-center justify-center"
+                      >
+                        {t.connectLine}
+                      </button>
                     </div>
 
                     <ProtectionIndex 
@@ -308,7 +316,7 @@ const App: React.FC = () => {
 
         {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} /> : <ProfileRequiredView />)}
         {activeTab === 'tax' && (profile ? <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} /> : <ProfileRequiredView />)}
-        {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={setProfile} lang={lang} policies={policies} onImport={handleImportPortfolio} />}
+        {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={setProfile} lang={lang} policies={policies} onImport={handleImportPortfolio} isPro={isPro} />}
         {activeTab === 'vault' && <VaultView policies={policies} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} lang={lang} isPro={isPro} user={user} />}
         {activeTab === 'admin' && <AdminConsole currentUser={user} lang={lang} />}
       </main>

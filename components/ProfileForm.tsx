@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, Policy } from '../types';
 import { translations, Language } from '../translations';
@@ -10,9 +9,10 @@ interface ProfileFormProps {
   lang: Language;
   policies: Policy[];
   onImport: (data: { profile: UserProfile, policies: Policy[] }) => void;
+  isPro: boolean;
 }
 
-const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang, policies, onImport }) => {
+const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang, policies, onImport, isPro }) => {
   const t = translations[lang];
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -65,6 +65,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
   };
 
   const handleExport = () => {
+    if (!isPro) return;
     const dataToExport = {
       version: storageStats.version,
       timestamp: new Date().toISOString(),
@@ -89,6 +90,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
   };
 
   const handleImportClick = () => {
+    if (!isPro) return;
     fileInputRef.current?.click();
   };
 
@@ -242,7 +244,21 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
       </div>
 
       {/* Data Management Section */}
-      <div className="bg-slate-50 p-6 md:p-8 rounded-2xl border border-slate-200 space-y-6">
+      <div className={`p-6 md:p-8 rounded-2xl border border-slate-200 space-y-6 transition-all relative overflow-hidden ${isPro ? 'bg-slate-50' : 'bg-slate-100 filter grayscale-[0.2]'}`}>
+        
+        {!isPro && (
+          <div className="absolute inset-0 z-20 bg-white/40 backdrop-blur-[1px] flex items-center justify-center">
+            <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 text-center max-w-xs animate-in zoom-in-95 duration-200">
+              <span className="text-4xl mb-3 block">🔒</span>
+              <p className="text-slate-800 font-bold mb-1">{t.proFeature}</p>
+              <p className="text-[10px] text-slate-500 mb-4">{t.proDesc}</p>
+              <button className="w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold transition-transform active:scale-95">
+                {t.upgradeNow}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm border border-slate-100">📂</div>
           <div>
@@ -259,7 +275,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
             </div>
             <button 
               onClick={handleExport}
-              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all"
+              disabled={!isPro}
+              className={`w-full py-2.5 rounded-xl font-bold text-xs transition-all ${isPro ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-300'}`}
             >
               ⬇️ {t.exportData}
             </button>
@@ -272,7 +289,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
             </div>
             <button 
               onClick={handleImportClick}
-              className="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs transition-all border border-indigo-100"
+              disabled={!isPro}
+              className={`w-full py-2.5 rounded-xl font-bold text-xs transition-all border ${isPro ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-100' : 'bg-slate-50 text-slate-300 border-slate-100'}`}
             >
               ⬆️ {t.importData}
             </button>
