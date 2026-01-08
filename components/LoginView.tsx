@@ -15,7 +15,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
 
   const simulateLogin = (email: string, name: string, picture: string) => {
     let role: UserRole = 'Member';
-    // Global admin check
+    // Global admin check based on your specific email
     if (email === 'phattararak@gmail.com') {
       role = 'Admin';
     }
@@ -48,9 +48,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
 
       // Simulate the network delay of a real Google OAuth handshake (1.5 seconds)
       setTimeout(() => {
-        const demoEmail = 'google-user@gmail.com';
-        const demoName = 'Google User';
-        const demoPic = `https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff`;
+        // In a real app, this would come from the Google ID Token
+        const demoEmail = 'user@example.com';
+        const demoName = 'Insurance Client';
+        const demoPic = `https://ui-avatars.com/api/?name=Insurance+Client&background=4285F4&color=fff`;
         
         simulateLogin(demoEmail, demoName, demoPic);
         setIsLoading(false);
@@ -65,9 +66,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
           : "โปรเจกต์นี้ต้องเปิดใช้งานการชำระเงินใน GCP โปรดเลือกโปรเจกต์ที่ตั้งค่าไว้แล้ว");
         if (aistudio) await aistudio.openSelectKey();
       } else {
-        // Fallback to simulation even on minor errors to keep the user flow moving
+        // Fallback to simulation to keep the flow moving
         setTimeout(() => {
-          simulateLogin('google-user@gmail.com', 'Google User', 'https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff');
+          simulateLogin('user@example.com', 'Insurance Client', 'https://ui-avatars.com/api/?name=Insurance+Client&background=4285F4&color=fff');
           setIsLoading(false);
         }, 1000);
       }
@@ -104,7 +105,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
           )}
 
           {/* Header Content */}
-          <div className="p-10 pb-10 text-center">
+          <div className="p-10 pb-16 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-indigo-100 mb-6 group hover:rotate-6 transition-transform">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 10C20 10 12 13 12 19V25C12 28 16 31 20 32C24 31 28 28 28 25V19C28 13 20 10 20 10Z" fill="white" fillOpacity="0.2" />
@@ -140,36 +141,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed px-4">
               {t.tosAgreement}
             </p>
-          </div>
-
-          {/* Dev Mode Section */}
-          <div className="bg-slate-50 border-t border-slate-100 p-8">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Developer Simulation</span>
-              <div className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] font-black uppercase">Debug</div>
-            </div>
-            <div className="space-y-2">
-              <button 
-                onClick={() => simulateLogin('phattararak@gmail.com', 'Phattararak (Admin)', 'https://ui-avatars.com/api/?name=P+Admin&background=4f46e5&color=fff')}
-                className="w-full flex items-center space-x-3 p-3 bg-white border border-slate-200 rounded-xl hover:border-indigo-500 transition-all text-left group"
-              >
-                <img src="https://ui-avatars.com/api/?name=P+Admin&background=4f46e5&color=fff" className="w-8 h-8 rounded-full group-hover:scale-110 transition-transform" alt="admin" />
-                <div>
-                  <p className="text-xs font-bold text-slate-800">Admin Login</p>
-                  <p className="text-[9px] text-slate-400 font-medium">phattararak@gmail.com</p>
-                </div>
-              </button>
-              <button 
-                onClick={() => simulateLogin('member@test.com', 'Standard User', 'https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff')}
-                className="w-full flex items-center space-x-3 p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-500 transition-all text-left group"
-              >
-                <img src="https://ui-avatars.com/api/?name=User&background=cbd5e1&color=fff" className="w-8 h-8 rounded-full group-hover:scale-110 transition-transform" alt="member" />
-                <div>
-                  <p className="text-xs font-bold text-slate-800">Regular Member</p>
-                  <p className="text-[9px] text-slate-400 font-medium">member@test.com</p>
-                </div>
-              </button>
-            </div>
           </div>
           
           <div className="p-4 bg-slate-100 text-center border-t border-slate-200">

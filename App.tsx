@@ -16,61 +16,6 @@ import TaxOptimizationView from './components/TaxOptimizationView';
 import LoginView from './components/LoginView';
 import AdminConsole from './components/AdminConsole';
 
-const MOCK_POLICIES: Policy[] = [
-  {
-    id: '1',
-    company: 'AIA Thailand',
-    planName: 'Health First Gold',
-    coverages: [
-      { type: CoverageType.HEALTH, sumAssured: 1000000, roomRate: 4000 },
-      { type: CoverageType.LIFE, sumAssured: 500000 }
-    ],
-    premiumAmount: 25000,
-    frequency: PaymentFrequency.YEARLY,
-    dueDate: '2025-05-15',
-    status: 'Active',
-    documents: []
-  },
-  {
-    id: '2',
-    company: 'FWD Life Insurance',
-    planName: 'Life Shield Plus',
-    coverages: [
-      { type: CoverageType.LIFE, sumAssured: 2000000 }
-    ],
-    premiumAmount: 12000,
-    frequency: PaymentFrequency.MONTHLY,
-    dueDate: '2025-08-20',
-    status: 'Grace Period',
-    documents: []
-  },
-  {
-    id: '3',
-    company: 'Thai Life Insurance',
-    planName: 'Critical Care 50',
-    coverages: [
-      { type: CoverageType.CRITICAL, sumAssured: 500000 },
-      { type: CoverageType.ACCIDENT, sumAssured: 300000 }
-    ],
-    premiumAmount: 8500,
-    frequency: PaymentFrequency.QUARTERLY,
-    dueDate: '2025-11-01',
-    status: 'Active',
-    documents: []
-  }
-];
-
-const DEFAULT_PROFILE: UserProfile = {
-  name: 'Tanawat R.',
-  sex: 'Male',
-  birthDate: '1992-06-12',
-  maritalStatus: 'Married',
-  dependents: 2,
-  annualIncome: 1200000,
-  monthlyExpenses: 45000,
-  totalDebt: 3500000
-};
-
 const AppLogo = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shadow-lg rounded-xl flex-shrink-0">
     <rect width="40" height="40" rx="12" fill="url(#logo_gradient)" />
@@ -89,11 +34,13 @@ const AppLogo = () => (
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [user, setUser] = useState<User | null>(null);
-  
   const t = translations[lang];
 
-  const [policies, setPolicies] = useState<Policy[]>(MOCK_POLICIES);
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  // State managed via persistence logic
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
   const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile' | 'admin'>('overview');
   const [isAddingPolicy, setIsAddingPolicy] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
@@ -101,13 +48,36 @@ const App: React.FC = () => {
   const [policyIdToDelete, setPolicyIdToDelete] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // Check for stored session (simulated)
+  // Initial Data Load
   useEffect(() => {
+    // Session load
     const savedUser = localStorage.getItem('pw_session');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+
+    // Database load (Local Database)
+    const savedPolicies = localStorage.getItem('pw_policies');
+    const savedProfile = localStorage.getItem('pw_profile');
+    
+    if (savedPolicies) setPolicies(JSON.parse(savedPolicies));
+    if (savedProfile) setProfile(JSON.parse(savedProfile));
+    
+    setDataLoaded(true);
   }, []);
+
+  // Database Auto-Save
+  useEffect(() => {
+    if (dataLoaded) {
+      localStorage.setItem('pw_policies', JSON.stringify(policies));
+    }
+  }, [policies, dataLoaded]);
+
+  useEffect(() => {
+    if (dataLoaded && profile) {
+      localStorage.setItem('pw_profile', JSON.stringify(profile));
+    }
+  }, [profile, dataLoaded]);
 
   const handleLogin = (newUser: User) => {
     setUser(newUser);
@@ -181,7 +151,6 @@ const App: React.FC = () => {
     window.open('https://line.me/ti/p/@patrickfwd', '_blank');
   };
 
-  // Guard: If not logged in, show Login View
   if (!user) {
     return <LoginView onLogin={handleLogin} lang={lang} />;
   }
@@ -205,7 +174,6 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        {/* User Card */}
         <div className="px-2">
           <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 relative group transition-all hover:bg-slate-100/50">
             <div className="flex items-center space-x-3">
@@ -271,7 +239,6 @@ const App: React.FC = () => {
             </button>
           )}
 
-          {/* Explicit Logout Button in Sidebar */}
           <div className="pt-4 mt-4 border-t border-slate-100">
             <button
               onClick={handleLogout}
@@ -325,7 +292,7 @@ const App: React.FC = () => {
             <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{user.name}</b></p>
           </div>
           <div className="flex items-center space-x-3">
-            {activeTab === 'overview' && (
+            {activeTab === 'overview' && policies.length > 0 && (
               <button 
                 onClick={() => setIsShareModalOpen(true)}
                 className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
@@ -346,59 +313,76 @@ const App: React.FC = () => {
 
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <Dashboard policies={policies} onViewDetails={setViewingPolicy} lang={lang} />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <PolicyList policies={policies} onDelete={handleDeletePolicy} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} />
-              </div>
-              <div className="space-y-6">
-                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white shadow-xl relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform"></div>
-                    <h5 className="font-bold text-lg mb-2 relative z-10">{t.lineSync}</h5>
-                    <p className="text-blue-100 text-sm mb-4 relative z-10 leading-relaxed font-medium">{t.lineDesc}</p>
-                    <button 
-                      onClick={handleConnectLine}
-                      className="w-full py-2.5 bg-white text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-50 transition-all relative z-10 shadow-lg active:scale-95"
-                    >
-                      {t.connectLine}
-                    </button>
-                 </div>
-                 {/* Re-designed Protection Index (Wisely Displayed) */}
-                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-6">
-                      <h5 className="font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">{t.healthIndex}</h5>
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    </div>
-                    
-                    <div className="flex items-end justify-between mb-4">
-                      <div>
-                        <p className="text-4xl font-black text-slate-900 tabular-nums">75%</p>
-                        <p className="text-[10px] font-bold text-emerald-600 uppercase mt-1">Status: Stable</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-2xl">🛡️</span>
-                      </div>
-                    </div>
+            {policies.length > 0 ? (
+              <>
+                <Dashboard policies={policies} onViewDetails={setViewingPolicy} lang={lang} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2">
+                    <PolicyList policies={policies} onDelete={handleDeletePolicy} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} />
+                  </div>
+                  <div className="space-y-6">
+                     <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl text-white shadow-xl relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform"></div>
+                        <h5 className="font-bold text-lg mb-2 relative z-10">{t.lineSync}</h5>
+                        <p className="text-blue-100 text-sm mb-4 relative z-10 leading-relaxed font-medium">{t.lineDesc}</p>
+                        <button 
+                          onClick={handleConnectLine}
+                          className="w-full py-2.5 bg-white text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-50 transition-all relative z-10 shadow-lg active:scale-95"
+                        >
+                          {t.connectLine}
+                        </button>
+                     </div>
+                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div className="flex items-center justify-between mb-6">
+                          <h5 className="font-black text-[10px] text-slate-400 uppercase tracking-[0.2em]">{t.healthIndex}</h5>
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        </div>
+                        
+                        <div className="flex items-end justify-between mb-4">
+                          <div>
+                            <p className="text-4xl font-black text-slate-900 tabular-nums">--%</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Pending Analysis</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-2xl">🛡️</span>
+                          </div>
+                        </div>
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
-                        <span>POOR</span>
-                        <span>EXCELLENT</span>
-                      </div>
-                      <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex p-0.5">
-                        <div className="h-full bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-500 rounded-full" style={{ width: '75%' }}></div>
-                      </div>
-                    </div>
-                    
-                    <button 
-                      onClick={() => setActiveTab('analysis')}
-                      className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100 transition-all active:scale-95"
-                    >
-                      View AI Breakdown →
-                    </button>
-                 </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                            <span>POOR</span>
+                            <span>EXCELLENT</span>
+                          </div>
+                          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex p-0.5">
+                            <div className="h-full bg-slate-200 rounded-full" style={{ width: '0%' }}></div>
+                          </div>
+                        </div>
+                        
+                        <button 
+                          onClick={() => setActiveTab('analysis')}
+                          className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-slate-100 transition-all active:scale-95"
+                        >
+                          View AI Breakdown →
+                        </button>
+                     </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-slate-200 shadow-sm">
+                <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-5xl">📁</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">No policies yet</h3>
+                <p className="text-slate-500 max-w-sm mx-auto mb-8">Start building your secure insurance portfolio to unlock AI analysis and tax optimization.</p>
+                <button 
+                  onClick={toggleAddingPolicy}
+                  className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+                >
+                  + Add Your First Policy
+                </button>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -418,19 +402,50 @@ const App: React.FC = () => {
 
         {activeTab === 'analysis' && (
           <div className="animate-in fade-in duration-500">
-            <GapAnalysisView policies={policies} profile={profile} lang={lang} />
+            {profile ? (
+              <GapAnalysisView policies={policies} profile={profile} lang={lang} />
+            ) : (
+              <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <span className="text-5xl block mb-4">👤</span>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Complete Your Profile</h3>
+                <p className="text-slate-500 max-w-xs mx-auto mb-8 text-sm">We need your age, income, and family context to perform an accurate protection gap analysis.</p>
+                <button onClick={() => setActiveTab('profile')} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100">Setup Profile Now</button>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'tax' && (
           <div className="animate-in fade-in duration-500">
-            <TaxOptimizationView policies={policies} profile={profile} lang={lang} />
+            {profile ? (
+              <TaxOptimizationView policies={policies} profile={profile} lang={lang} />
+            ) : (
+              <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <span className="text-5xl block mb-4">💰</span>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Tax Planning Restricted</h3>
+                <p className="text-slate-500 max-w-xs mx-auto mb-8 text-sm">Please update your annual income in the Profile tab to calculate your potential tax savings.</p>
+                <button onClick={() => setActiveTab('profile')} className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-100">Enter Income Details</button>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'profile' && (
           <div className="animate-in fade-in duration-500">
-            <ProfileForm initialProfile={profile} onSave={setProfile} lang={lang} />
+            <ProfileForm 
+              initialProfile={profile || {
+                name: user.name,
+                sex: 'Male',
+                birthDate: '1990-01-01',
+                maritalStatus: 'Single',
+                dependents: 0,
+                annualIncome: 0,
+                monthlyExpenses: 0,
+                totalDebt: 0
+              }} 
+              onSave={setProfile} 
+              lang={lang} 
+            />
           </div>
         )}
 
@@ -465,13 +480,15 @@ const App: React.FC = () => {
         lang={lang}
       />
 
-      <ShareReportModal 
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        policies={policies}
-        profile={profile}
-        lang={lang}
-      />
+      {profile && (
+        <ShareReportModal 
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          policies={policies}
+          profile={profile}
+          lang={lang}
+        />
+      )}
     </div>
   );
 };

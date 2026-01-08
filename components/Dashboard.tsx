@@ -74,55 +74,67 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[400px] flex flex-col">
           <h4 className="font-bold text-lg mb-2">{t.coverageDist}</h4>
-          <div className="flex-1 h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie 
-                  data={chartData} 
-                  cx="50%" 
-                  cy="50%" 
-                  innerRadius={60} 
-                  outerRadius={90} 
-                  paddingAngle={5} 
-                  dataKey="value"
-                  animationBegin={0}
-                  animationDuration={800}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: number) => [`฿${value.toLocaleString()}`, t.sumAssured]}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
           
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-50">
-            {chartData.map((entry, index) => (
-              <div key={entry.name} className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full flex-shrink-0" 
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }} 
-                />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-semibold text-slate-700 truncate">{entry.name}</span>
-                  <span className="text-[10px] text-slate-400">
-                    {((entry.value / (totalSumAssured || 1)) * 100).toFixed(1)}%
-                  </span>
-                </div>
+          {chartData.length > 0 ? (
+            <>
+              <div className="flex-1 h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie 
+                      data={chartData} 
+                      cx="50%" 
+                      cy="50%" 
+                      innerRadius={60} 
+                      outerRadius={90} 
+                      paddingAngle={5} 
+                      dataKey="value"
+                      animationBegin={0}
+                      animationDuration={800}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [`฿${value.toLocaleString()}`, t.sumAssured]}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+              
+              <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-50">
+                {chartData.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }} 
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold text-slate-700 truncate">{entry.name}</span>
+                      <span className="text-[10px] text-slate-400">
+                        {((entry.value / (totalSumAssured || 1)) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 opacity-40">
+              <span className="text-6xl">🥧</span>
+              <p className="text-sm font-medium">Add policies to view coverage distribution chart</p>
+            </div>
+          )}
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <h4 className="font-bold text-lg mb-4">{t.upcomingRenewals}</h4>
           <div className="space-y-4">
             {policies.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 italic text-sm">No policies found</div>
+              <div className="text-center py-24 text-slate-400 italic text-sm border-2 border-dashed border-slate-100 rounded-2xl">
+                No policies found to track renewals
+              </div>
             ) : (
               policies
                 .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())

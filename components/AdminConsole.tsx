@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { User, UserRole } from '../types';
 
@@ -8,21 +8,37 @@ interface AdminConsoleProps {
   lang: Language;
 }
 
-const INITIAL_USERS: User[] = [
-  { id: '1', email: 'phattararak@gmail.com', name: 'Phattararak', role: 'Admin', picture: 'https://ui-avatars.com/api/?name=Phattararak&background=4f46e5&color=fff' },
-  { id: '2', email: 'client-a@test.com', name: 'Somsak R.', role: 'Pro-Member', picture: 'https://ui-avatars.com/api/?name=Somsak&background=f59e0b&color=fff' },
-  { id: '3', email: 'client-b@test.com', name: 'Wipa W.', role: 'Member', picture: 'https://ui-avatars.com/api/?name=Wipa&background=cbd5e1&color=fff' },
-  { id: '4', email: 'new-user@gmail.com', name: 'Anon Y.', role: 'Member', picture: 'https://ui-avatars.com/api/?name=Anon&background=cbd5e1&color=fff' },
-];
-
 const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
   const t = translations[lang];
   const [activeSubTab, setActiveSubTab] = useState<'users' | 'cloud' | 'deploy'>('users');
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  
+  // Persistence for user management
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('pw_users');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Exact Project ID from your screenshot to ensure CLI fallback works
+  // Exact Project ID from environment
   const projectId = "gen-lang-client-0928682283";
+
+  // Ensure current user is in the list
+  useEffect(() => {
+    setUsers(prev => {
+      if (!prev.find(u => u.email === currentUser.email)) {
+        const newList = [currentUser, ...prev];
+        localStorage.setItem('pw_users', JSON.stringify(newList));
+        return newList;
+      }
+      return prev;
+    });
+  }, [currentUser]);
+
+  // Sync back to local storage on changes
+  useEffect(() => {
+    localStorage.setItem('pw_users', JSON.stringify(users));
+  }, [users]);
 
   if (currentUser.role !== 'Admin') {
     return (
@@ -197,12 +213,12 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
               { label: 'LINE API', status: 'Standby', icon: '💬', color: 'blue' }
             ].map((service, i) => (
               <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                <div className={`w-12 h-12 bg-${service.color}-50 text-2xl flex items-center justify-center rounded-2xl`}>
+                <div className={`w-12 h-12 bg-slate-50 text-2xl flex items-center justify-center rounded-2xl`}>
                   {service.icon}
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{service.label}</p>
-                  <p className={`text-xs font-bold text-${service.color}-600`}>{service.status}</p>
+                  <p className={`text-xs font-bold text-emerald-600`}>{service.status}</p>
                 </div>
               </div>
             ))}
@@ -218,20 +234,20 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
                <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-bold text-slate-700">Storage Bucket (policy-docs-vault)</span>
-                    <span className="text-xs text-slate-500 font-medium">1.2 GB / 5.0 GB</span>
+                    <span className="text-xs text-slate-500 font-medium">0 GB / 5.0 GB</span>
                   </div>
                   <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: '24%' }}></div>
+                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: '0%' }}></div>
                   </div>
                </div>
                
                <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-bold text-slate-700">Vertex AI API Usage (Quotas)</span>
-                    <span className="text-xs text-slate-500 font-medium">450 / 10,000 requests</span>
+                    <span className="text-xs text-slate-500 font-medium">0 / 10,000 requests</span>
                   </div>
                   <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '4.5%' }}></div>
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '0%' }}></div>
                   </div>
                </div>
              </div>
@@ -248,7 +264,7 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
                   <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm group hover:border-indigo-400 transition-all cursor-pointer">
                     <div className="flex items-center justify-between mb-4">
                        <span className="text-3xl">{tmpl.icon}</span>
-                       <span className={`text-[8px] font-black uppercase px-2 py-1 rounded bg-${tmpl.color}-50 text-${tmpl.color}-600`}>Official Template</span>
+                       <span className={`text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-50 text-slate-600`}>Official Template</span>
                     </div>
                     <h5 className="font-black text-slate-800 text-sm mb-1">{tmpl.name}</h5>
                     <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">{tmpl.feature}</p>
@@ -263,7 +279,6 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
 
       {activeSubTab === 'deploy' && (
         <div className="space-y-8">
-          {/* Troubleshooting Section for User's Billing Issue */}
           <div className="bg-amber-50 border border-amber-200 rounded-[2.5rem] p-8 animate-in slide-in-from-top-4 duration-500">
             <div className="flex items-start space-x-4">
               <div className="w-12 h-12 bg-amber-100 text-2xl flex items-center justify-center rounded-2xl shadow-sm">⚠️</div>
