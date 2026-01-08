@@ -1,6 +1,7 @@
 
 import { Policy, UserProfile } from '../types';
 
+// Using relative path ensures it works whether hosted on the same domain or proxied
 const API_BASE_URL = '/api';
 
 export const cloudSyncService = {
@@ -12,7 +13,7 @@ export const cloudSyncService = {
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.warn('Sync Service: Bridge appears offline or unreachable.');
+      console.warn('Sync Service: Bridge unreachable.');
       return null;
     }
   },
@@ -21,13 +22,8 @@ export const cloudSyncService = {
     try {
       const response = await fetch(`${API_BASE_URL}/portfolio/${viewId}`);
       if (!response.ok) return null;
-      const data = await response.json();
-      if (data && data.policies && data.profile) {
-        return data as { policies: Policy[]; profile: UserProfile };
-      }
-      return null;
+      return await response.json();
     } catch (error) {
-      console.warn('Sync Service: Guest view unavailable.');
       return null;
     }
   },
@@ -68,17 +64,14 @@ export const cloudSyncService = {
     try {
       const formData = new FormData();
       formData.append('file', file);
-
       const response = await fetch(`${API_BASE_URL}/vault/upload`, {
         method: 'POST',
         headers: { 'X-User-ID': userId },
         body: formData,
       });
-
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
-      console.error('Upload Error:', error);
       return null;
     }
   },
@@ -87,7 +80,6 @@ export const cloudSyncService = {
     try {
       const parts = fileUrl.split('storage.googleapis.com/')[1].split('/');
       const fileName = parts.slice(1).join('/');
-
       const response = await fetch(`${API_BASE_URL}/vault/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'X-User-ID': userId },

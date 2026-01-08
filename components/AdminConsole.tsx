@@ -70,8 +70,7 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
     
     const startTime = Date.now();
     
-    // In production (Cloud Run), the frontend and backend share the same domain.
-    // Relative path /api is the most reliable discovery method.
+    // Discovery order: 1. Relative (Prod), 2. Localhost 8080 (Local Bridge)
     const urlPatterns = [
       '/api',
       'http://localhost:8080/api'
@@ -85,7 +84,7 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
       
       try {
         const pingUrl = `${baseUrl}/ping`;
-        const pingRes = await fetch(pingUrl, { signal: AbortSignal.timeout(4000) }).catch(() => null);
+        const pingRes = await fetch(pingUrl, { signal: AbortSignal.timeout(3000) }).catch(() => null);
         
         if (pingRes && pingRes.ok) {
           const response = await fetch(`${baseUrl}/admin/health`);
@@ -111,8 +110,8 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
             setInfraStatus(prev => ({
               ...prev,
               status: 'offline',
-              bridgeError: 'Bridge online but returned invalid health data.',
-              rawResponse: text.substring(0, 300),
+              bridgeError: 'Bridge online but invalid health response.',
+              rawResponse: text.substring(0, 200),
               activeUrl: baseUrl
             }));
           }
@@ -122,12 +121,12 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
       }
     }
 
-    if (!success && infraStatus.status !== 'offline') {
+    if (!success) {
       setInfraStatus({
         status: 'offline',
         database: 'disconnected',
         storage: 'disconnected',
-        bridgeError: `Could not reach Bridge API. Last error: ${lastError}`,
+        bridgeError: `Bridge unreachable. Last error: ${lastError}`,
         latency: Date.now() - startTime
       });
     }
@@ -154,7 +153,7 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
       <div className="flex p-1 bg-slate-100 rounded-2xl w-fit overflow-x-auto">
         {[
           { id: 'users', label: t.manageUsers },
-          { id: 'infra', label: 'Infra Status' },
+          { id: 'infra', label: 'Infra Monitor' },
           { id: 'schema', label: 'SQL Schema' }
         ].map((tab) => (
           <button 
@@ -202,8 +201,8 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 space-y-8">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-2xl font-black text-slate-800 tracking-tight">System Health Monitor</h3>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Status of Google Cloud SQL and Storage</p>
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight">System Health</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Real-time status of cloud components</p>
             </div>
             <button 
               onClick={checkInfra}
@@ -217,20 +216,20 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
             <div className="p-6 bg-rose-50 border border-rose-100 rounded-3xl animate-in slide-in-from-top-2">
               <div className="flex items-center gap-3 text-rose-800 font-bold mb-2">
                 <span className="text-xl">📡</span>
-                <h4>Connectivity Diagnostics</h4>
+                <h4>Connectivity Issue Detected</h4>
               </div>
               <p className="text-sm text-rose-600 mb-2 font-medium">{infraStatus.bridgeError}</p>
               
               <div className="space-y-3 mt-4">
-                <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Recommended Actions:</p>
+                <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Troubleshooting Steps:</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div className="bg-white/50 p-4 rounded-2xl border border-rose-100 text-xs">
-                      <p className="font-bold text-rose-900 mb-1">Local Development</p>
-                      <p className="text-rose-600">Run <code>npm start</code> in a terminal to launch the bridge on port 8080.</p>
+                      <p className="font-bold text-rose-900 mb-1">Local Environment</p>
+                      <p className="text-rose-600">Ensure <code>npm start</code> is running on port 8080.</p>
                    </div>
                    <div className="bg-white/50 p-4 rounded-2xl border border-rose-100 text-xs">
                       <p className="font-bold text-rose-900 mb-1">Production (Cloud Run)</p>
-                      <p className="text-rose-600">Ensure Cloud SQL Auth Proxy is enabled in your Cloud Run service settings.</p>
+                      <p className="text-rose-600">Ensure Cloud SQL Auth Proxy is enabled in Cloud Run settings.</p>
                    </div>
                 </div>
               </div>
@@ -238,56 +237,32 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className={`p-6 rounded-3xl border transition-all ${infraStatus.status === 'online' ? 'bg-emerald-50 border-emerald-100' : infraStatus.status === 'checking' ? 'bg-slate-50 border-slate-100' : 'bg-rose-50 border-rose-100'}`}>
+            <div className={`p-6 rounded-3xl border transition-all ${infraStatus.status === 'online' ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
               <div className="flex justify-between items-start mb-4">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bridge API</span>
-                <span className={`w-3 h-3 rounded-full ${infraStatus.status === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse' : infraStatus.status === 'checking' ? 'bg-slate-300' : 'bg-rose-500'}`}></span>
+                <span className={`w-3 h-3 rounded-full ${infraStatus.status === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500'}`}></span>
               </div>
               <p className="text-2xl font-black text-slate-800 mb-1">{infraStatus.status.toUpperCase()}</p>
               <p className="text-xs text-slate-500">Latency: <span className="font-bold text-slate-700">{infraStatus.latency}ms</span></p>
             </div>
 
-            <div className={`p-6 rounded-3xl border transition-all ${infraStatus.database === 'connected' ? 'bg-emerald-50 border-emerald-100' : infraStatus.database === 'checking' ? 'bg-slate-50 border-slate-100' : 'bg-rose-50 border-rose-100'}`}>
+            <div className={`p-6 rounded-3xl border transition-all ${infraStatus.database === 'connected' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
               <div className="flex justify-between items-start mb-4">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PostgreSQL</span>
-                <span className={`w-3 h-3 rounded-full ${infraStatus.database === 'connected' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse' : infraStatus.database === 'checking' ? 'bg-slate-300' : 'bg-rose-500'}`}></span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cloud SQL</span>
+                <span className={`w-3 h-3 rounded-full ${infraStatus.database === 'connected' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500'}`}></span>
               </div>
-              <p className="text-2xl font-black text-slate-800 mb-1">{infraStatus.database.toUpperCase().replace('_', ' ')}</p>
-              <p className="text-xs text-slate-500 truncate">Instance: <span className="font-bold text-slate-700">{dbName}</span></p>
-              {infraStatus.dbError && (
-                <div className="mt-2 p-2 bg-white/50 border border-rose-100 rounded-lg">
-                   <p className="text-[9px] text-rose-600 font-mono break-words">{infraStatus.dbError}</p>
-                </div>
-              )}
+              <p className="text-2xl font-black text-slate-800 mb-1">{infraStatus.database.toUpperCase()}</p>
+              <p className="text-xs text-slate-500">DB: <span className="font-bold text-slate-700">{dbName}</span></p>
+              {infraStatus.dbError && <p className="mt-2 text-[9px] text-rose-500 font-mono line-clamp-2">{infraStatus.dbError}</p>}
             </div>
 
-            <div className={`p-6 rounded-3xl border transition-all ${infraStatus.storage === 'connected' ? 'bg-emerald-50 border-emerald-100' : infraStatus.storage === 'checking' ? 'bg-slate-50 border-slate-100' : 'bg-rose-50 border-rose-100'}`}>
+            <div className={`p-6 rounded-3xl border transition-all ${infraStatus.storage === 'connected' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
               <div className="flex justify-between items-start mb-4">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">GCS Bucket</span>
-                <span className={`w-3 h-3 rounded-full ${infraStatus.storage === 'connected' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse' : infraStatus.storage === 'checking' ? 'bg-slate-300' : 'bg-rose-500'}`}></span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bucket Storage</span>
+                <span className={`w-3 h-3 rounded-full ${infraStatus.storage === 'connected' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500'}`}></span>
               </div>
-              <p className="text-2xl font-black text-slate-800 mb-1">{infraStatus.storage.toUpperCase().replace('_', ' ')}</p>
-              <p className="text-xs text-slate-500">Bucket: <span className="font-bold text-slate-700">{infraStatus.bucket || 'N/A'}</span></p>
-              {infraStatus.storageError && (
-                <div className="mt-2 p-2 bg-white/50 border border-rose-100 rounded-lg">
-                   <p className="text-[9px] text-rose-600 font-mono break-words">{infraStatus.storageError}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-slate-900 rounded-[2rem] p-8 text-white">
-            <h4 className="font-bold text-sm mb-4 text-slate-400 uppercase tracking-widest">Cloud SQL Auth Proxy Config</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-              <div className="p-3 bg-white/5 rounded-xl border border-white/10 group cursor-pointer" onClick={() => handleCopy(sqlConnection, 'sql')}>
-                <span className="text-blue-400 block mb-1">SQL_CONN:</span> 
-                {sqlConnection}
-                {copiedId === 'sql' && <span className="ml-2 text-emerald-400 text-[10px]">COPIED!</span>}
-              </div>
-              <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                <span className="text-blue-400 block mb-1">ENV:</span> 
-                {infraStatus.environment || 'Detecting...'}
-              </div>
+              <p className="text-2xl font-black text-slate-800 mb-1">{infraStatus.storage.toUpperCase()}</p>
+              <p className="text-xs text-slate-500">Bucket: <span className="font-bold text-slate-700">{infraStatus.bucket || 'policywallet'}</span></p>
             </div>
           </div>
         </div>
@@ -295,11 +270,11 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
 
       {activeSubTab === 'schema' && (
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-           <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">PostgreSQL Tables</h3>
-           <p className="text-slate-500 text-sm mb-8">Schema structure used in Cloud SQL</p>
+           <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">PostgreSQL Schema</h3>
+           <p className="text-slate-500 text-sm mb-8">Table structure for high-performance JSONB storage</p>
            
-           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 font-mono text-xs">
-<pre className="text-slate-700 whitespace-pre-wrap">
+           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 font-mono text-xs overflow-x-auto">
+<pre className="text-slate-700">
 {`CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   policies JSONB DEFAULT '[]'::jsonb,

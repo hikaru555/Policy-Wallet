@@ -12,38 +12,38 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// 1. Production-Grade Configuration
-// K_SERVICE is set by default in Google Cloud Run environments
+// 1. Production Environment Detection
+// In GCP Cloud Run, K_SERVICE is always set.
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.K_SERVICE;
-const CLOUD_SQL_CONNECTION_NAME = 'gen-lang-client-0928682283:us-central1:tiered-web-app-db-bbbd';
+const CLOUD_SQL_CONNECTION_NAME = process.env.CLOUD_SQL_CONNECTION_NAME || 'gen-lang-client-0928682283:us-central1:tiered-web-app-db-bbbd';
 const BUCKET_NAME = 'policywallet';
 
 const dbConfig = {
   user: 'policywallet',
   password: '.E9iAtlC[I5;g&<3',
   database: 'policywallet',
-  // In Cloud Run, we use the Unix socket. Locally, we use localhost (proxy).
+  // Use Unix socket in production, localhost in dev (for Cloud SQL Auth Proxy)
   host: isProduction ? `/cloudsql/${CLOUD_SQL_CONNECTION_NAME}` : 'localhost',
   port: 5432,
   connectionTimeoutMillis: 5000, 
-  max: 20, // Connection pool limit
+  max: 10, // Optimized for Cloud Run concurrency
 };
 
 let pool;
 try {
   pool = new Pool(dbConfig);
-  pool.on('error', (err) => console.error('CRITICAL: DB Pool Error:', err.message));
+  pool.on('error', (err) => console.error('DATABASE POOL ERROR:', err.message));
 } catch (e) {
-  console.error('CRITICAL: Failed to create DB pool:', e.message);
+  console.error('CRITICAL: Pool initialization failed:', e.message);
 }
 
 const storage = new Storage();
 const bucket = storage.bucket(BUCKET_NAME);
 
-// 2. Database Initialization (Non-blocking)
+// 2. Database Schema Initialization (Non-blocking)
 const initDb = async () => {
   if (!pool) return;
-  console.log('⏳ Attempting to verify database schema...');
+  console.log('⏳ Checking database connectivity...');
   try {
     const client = await pool.connect();
     await client.query(`
@@ -55,46 +55,49 @@ const initDb = async () => {
       )
     `);
     client.release();
-    console.log('✅ PostgreSQL Schema Verified');
+    console.log('✅ PostgreSQL Schema Verified and Ready');
   } catch (err) {
-    console.error('❌ DB Init/Connection Warning:', err.message);
-    console.log('💡 Note: Server will continue running in limited mode.');
+    console.warn('⚠️ Database not ready yet:', err.message);
+    console.log('💡 Note: Bridge will stay online. Check Cloud SQL Auth Proxy settings.');
   }
 };
 
-// Start init but don't await it to block the listen
+// Start initialization in background
 initDb();
 
 // --- API ENDPOINTS ---
 
-app.get('/api/ping', (req, res) => res.json({ status: 'pong', environment: isProduction ? 'prod' : 'dev' }));
+// Simple Ping for health checks
+app.get('/api/ping', (req, res) => {
+  res.json({ 
+    status: 'pong', 
+    env: isProduction ? 'production' : 'development',
+    time: new Date().toISOString()
+  });
+});
 
-// Health check for Admin Console
+// Detailed Infrastructure Health
 app.get('/api/admin/health', async (req, res) => {
   const health = {
     status: 'online',
-    timestamp: new Date().toISOString(),
     database: 'checking',
     storage: 'checking',
-    environment: isProduction ? 'production' : 'development',
-    bucket: BUCKET_NAME
+    env: isProduction ? 'production' : 'development'
   };
 
   if (pool) {
     try {
-      const dbRes = await pool.query('SELECT 1');
+      await pool.query('SELECT 1');
       health.database = 'connected';
     } catch (err) {
       health.database = 'error';
       health.dbError = err.message;
     }
-  } else {
-    health.database = 'pool_not_initialized';
   }
 
   try {
     const [exists] = await bucket.exists();
-    health.storage = exists ? 'connected' : 'bucket_not_found';
+    health.storage = exists ? 'connected' : 'not_found';
   } catch (err) {
     health.storage = 'error';
     health.storageError = err.message;
@@ -103,21 +106,20 @@ app.get('/api/admin/health', async (req, res) => {
   res.json(health);
 });
 
-// Portfolio Data Retrieval
+// Portfolio Persistence
 app.get('/api/portfolio/:userId', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'DB Pool Not Ready' });
+  if (!pool) return res.status(503).json({ error: 'DB Pool Down' });
   try {
     const result = await pool.query('SELECT policies, profile FROM users WHERE id = $1', [req.params.userId]);
     res.json(result.rows[0] || { policies: [], profile: null });
   } catch (err) {
-    res.status(500).json({ error: 'Database query failed: ' + err.message });
+    res.status(500).json({ error: 'Database error: ' + err.message });
   }
 });
 
-// Policies Sync
 app.post('/api/policies/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
-  if (!userId || !pool) return res.status(400).json({ error: 'Missing User ID or DB connection' });
+  if (!userId || !pool) return res.status(400).json({ error: 'Missing context' });
   try {
     await pool.query(`
       INSERT INTO users (id, policies, last_sync) 
@@ -130,10 +132,9 @@ app.post('/api/policies/sync', async (req, res) => {
   }
 });
 
-// Profile Sync
 app.post('/api/profile/sync', async (req, res) => {
   const userId = req.headers['x-user-id'];
-  if (!userId || !pool) return res.status(400).json({ error: 'Missing User ID or DB connection' });
+  if (!userId || !pool) return res.status(400).json({ error: 'Missing context' });
   try {
     await pool.query(`
       INSERT INTO users (id, profile, last_sync) 
@@ -146,11 +147,10 @@ app.post('/api/profile/sync', async (req, res) => {
   }
 });
 
-// Vault / Cloud Storage Upload
+// Vault Management
 app.post('/api/vault/upload', upload.single('file'), async (req, res) => {
   const userId = req.headers['x-user-id'];
-  if (!userId || !req.file) return res.status(400).json({ error: 'Missing file/user' });
-
+  if (!userId || !req.file) return res.status(400).json({ error: 'Upload failed' });
   try {
     const blob = bucket.file(`vault/${userId}/${Date.now()}-${req.file.originalname}`);
     const blobStream = blob.createWriteStream({
@@ -158,31 +158,21 @@ app.post('/api/vault/upload', upload.single('file'), async (req, res) => {
       contentType: req.file.mimetype,
       public: true, 
     });
-
-    blobStream.on('error', (err) => res.status(500).json({ error: 'Upload stream error: ' + err.message }));
+    blobStream.on('error', (err) => res.status(500).json({ error: err.message }));
     blobStream.on('finish', () => {
-      const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${blob.name}`;
-      res.json({ url: publicUrl, name: req.file.originalname, mimeType: req.file.mimetype });
+      res.json({ 
+        url: `https://storage.googleapis.com/${BUCKET_NAME}/${blob.name}`, 
+        name: req.file.originalname, 
+        mimeType: req.file.mimetype 
+      });
     });
-
     blobStream.end(req.file.buffer);
   } catch (err) {
-    res.status(500).json({ error: 'Storage error: ' + err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.delete('/api/vault/delete', async (req, res) => {
-  const { fileName } = req.body; 
-  if (!fileName) return res.status(400).json({ error: 'Missing filename' });
-  try {
-    await bucket.file(fileName).delete();
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Delete failed: ' + err.message });
-  }
-});
-
-// Serve Static Frontend
+// Static Assets
 app.use(express.static(__dirname));
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
@@ -193,5 +183,5 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 Policy Wallet Bridge listening on port ${PORT}`);
   console.log(`🌍 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  console.log(`🔗 DB Connection Path: ${dbConfig.host}\n`);
+  console.log(`📦 Cloud SQL Socket: ${dbConfig.host}\n`);
 });
