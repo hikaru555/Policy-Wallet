@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, Policy } from '../types';
 import { translations, Language } from '../translations';
+import { storageManager } from '../services/storageManager';
 
 interface ProfileFormProps {
   initialProfile: UserProfile;
@@ -32,6 +33,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
   const [incomeStr, setIncomeStr] = useState(formatWithCommas(initialProfile.annualIncome));
   const [expenseStr, setExpenseStr] = useState(formatWithCommas(initialProfile.monthlyExpenses));
   const [debtStr, setDebtStr] = useState(formatWithCommas(initialProfile.totalDebt));
+  const [storageStats, setStorageStats] = useState(storageManager.getStats());
 
   useEffect(() => {
     setFormData(initialProfile);
@@ -58,12 +60,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
     };
     
     onSave(finalProfile);
+    setStorageStats(storageManager.getStats());
     alert(lang === 'en' ? "Profile saved!" : "บันทึกข้อมูลแล้ว!");
   };
 
   const handleExport = () => {
     const dataToExport = {
-      version: "1.0",
+      version: storageStats.version,
       timestamp: new Date().toISOString(),
       profile: {
         ...formData,
@@ -99,6 +102,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
         const json = JSON.parse(event.target?.result as string);
         if (json.profile && Array.isArray(json.policies)) {
           onImport({ profile: json.profile, policies: json.policies });
+          setStorageStats(storageManager.getStats());
           alert(t.importSuccess);
         } else {
           alert(t.importError);
@@ -280,6 +284,21 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
               accept=".json"
             />
           </div>
+        </div>
+
+        {/* Persistence Health Section */}
+        <div className="mt-6 p-4 bg-white rounded-2xl border border-slate-100 flex items-center justify-between">
+           <div className="flex items-center space-x-3">
+             <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">🛡️</div>
+             <div>
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Persistence Health</p>
+               <p className="text-xs font-bold text-slate-700">Storage Version: <span className="text-emerald-600">{storageStats.version}</span></p>
+             </div>
+           </div>
+           <div className="text-right">
+             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Usage: {storageStats.size}</p>
+             <p className="text-[9px] text-slate-300 italic">Last sync: {storageStats.lastUpdate}</p>
+           </div>
         </div>
       </div>
     </div>

@@ -15,29 +15,23 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) => {
   const t = translations[lang];
 
-  // Filter policies that are still providing coverage (Active or Grace Period)
   const activeAndGracePolicies = useMemo(() => 
     policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated'),
   [policies]);
 
-  // Total sum of all sumAssured across active/grace policies
-  // User Requested Change: Only include Life, Pension, and Savings
   const totalSumAssured = activeAndGracePolicies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => {
       const includedTypes = [CoverageType.LIFE, CoverageType.PENSION, CoverageType.SAVINGS];
       return includedTypes.includes(c.type) ? cAcc + c.sumAssured : cAcc;
     }, 0), 0);
 
-  // Total Daily Hospital Benefit (Cash per day)
   const totalHospitalBenefit = activeAndGracePolicies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => 
       c.type === CoverageType.HOSPITAL_BENEFIT ? cAcc + c.sumAssured : cAcc, 0), 0);
 
-  // Total daily room rate across all health coverages
   const totalRoomRate = activeAndGracePolicies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => cAcc + (c.roomRate || 0), 0), 0);
 
-  // Total annual premium
   const annualPremium = activeAndGracePolicies.reduce((acc, p) => {
     let multiplier = 1;
     if (p.frequency === PaymentFrequency.MONTHLY) multiplier = 12;
@@ -45,7 +39,6 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
     return acc + (p.premiumAmount * multiplier);
   }, 0);
 
-  // Group sum assured by coverage type for active/grace policies
   const coverageDataMap = new Map<CoverageType, number>();
   activeAndGracePolicies.forEach(p => {
     p.coverages.forEach(c => {
@@ -70,31 +63,24 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
 
   const handleSyncCalendar = () => {
     if (activeAndGracePolicies.length === 0) return;
-
-    // Generate iCalendar (.ics) content
     let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Policy Wallet//NONSGML v1.0//EN\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n";
-
     activeAndGracePolicies.forEach(p => {
       const date = new Date(p.dueDate);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}${month}${day}`;
-
       icsContent += "BEGIN:VEVENT\n";
       icsContent += `UID:${p.id}@policywallet.app\n`;
       icsContent += `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z\n`;
       icsContent += `DTSTART;VALUE=DATE:${dateStr}\n`;
       icsContent += `SUMMARY:Insurance Renewal: ${p.planName}\n`;
-      icsContent += `DESCRIPTION:Insurance renewal for ${p.planName} (${p.company}). Premium amount: ฿${p.premiumAmount.toLocaleString()}. Manage your policies at Policy Wallet. Contact Patrick for help: https://line.me/ti/p/@patrickfwd\n`;
+      icsContent += `DESCRIPTION:Insurance renewal for ${p.planName} (${p.company}). Premium amount: ฿${p.premiumAmount.toLocaleString()}. Manage your policies at Policy Wallet.\n`;
       icsContent += "STATUS:CONFIRMED\n";
       icsContent += "TRANSP:TRANSPARENT\n";
       icsContent += "END:VEVENT\n";
     });
-
     icsContent += "END:VCALENDAR";
-
-    // Create download link
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
@@ -102,7 +88,6 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     alert(t.calendarSuccess);
   };
 

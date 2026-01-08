@@ -18,7 +18,6 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
 
   const handleRunAnalysis = async () => {
     setLoading(true);
-    // Filter out Terminated policies so AI doesn't count them as existing coverage
     const activePolicies = policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated');
     
     try {
@@ -35,15 +34,15 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-emerald-500';
-    if (score >= 50) return 'text-amber-500';
-    return 'text-rose-500';
-  };
-
-  const getScoreStroke = (score: number) => {
     if (score >= 80) return '#10b981'; // emerald-500
     if (score >= 50) return '#f59e0b'; // amber-500
     return '#f43f5e'; // rose-500
+  };
+
+  const getScoreStatus = (score: number) => {
+    if (score >= 80) return lang === 'en' ? 'Excellence' : 'ดีเยี่ยม';
+    if (score >= 50) return lang === 'en' ? 'Moderate' : 'ปานกลาง';
+    return lang === 'en' ? 'Poor' : 'ควรปรับปรุง';
   };
 
   const handleConsultExpert = () => {
@@ -51,6 +50,8 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
   };
 
   const activeCount = policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated').length;
+
+  const displayScore = result?.score || 0;
 
   return (
     <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
@@ -78,11 +79,6 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
           <p className="text-slate-400 max-w-sm mx-auto text-sm">
             Our AI will evaluate your total sum assured, room rates, and critical illness coverage against your financial liabilities.
           </p>
-          {policies.some(p => calculatePolicyStatus(p.dueDate) === 'Terminated') && (
-            <p className="mt-4 text-[10px] text-amber-600 font-bold uppercase tracking-widest italic">
-              Note: Terminated policies are excluded from analysis.
-            </p>
-          )}
         </div>
       )}
 
@@ -96,49 +92,18 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
               <div className="h-4 bg-slate-100 rounded w-1/2"></div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <div className="h-48 bg-slate-50 rounded-3xl animate-pulse"></div>
-            <div className="h-48 bg-slate-50 rounded-3xl animate-pulse"></div>
-          </div>
         </div>
       )}
 
       {result && !loading && (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {/* Enhanced Protection Index View */}
+          {/* Horizontal Bar Gauge Section */}
           <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
-              <div className="relative w-48 h-48 flex-shrink-0">
-                <svg className="w-full h-full transform -rotate-90 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                  {/* Track */}
-                  <circle 
-                    cx="96" cy="96" r="80" 
-                    stroke="rgba(255,255,255,0.1)" 
-                    strokeWidth="16" fill="transparent" 
-                  />
-                  {/* Progress */}
-                  <circle 
-                    cx="96" cy="96" r="80" 
-                    stroke={getScoreStroke(result.score)} 
-                    strokeWidth="16" 
-                    fill="transparent" 
-                    strokeDasharray={502.65}
-                    strokeDashoffset={502.65 - (502.65 * result.score) / 100}
-                    strokeLinecap="round"
-                    className="transition-all duration-[1500ms] ease-out"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className={`text-5xl font-black ${getScoreColor(result.score)} tabular-nums`}>{result.score}%</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Level</span>
-                </div>
-              </div>
-
-              <div className="flex-1 text-center lg:text-left space-y-4">
+            <div className="relative z-10 flex flex-col gap-10">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                   <h3 className="text-3xl font-black tracking-tight mb-2">{t.healthIndex}</h3>
                   <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border ${
@@ -147,18 +112,49 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
                     'bg-rose-500/10 text-rose-400 border-rose-500/20'
                   }`}>
                     <span className="mr-2">
-                      {result.score >= 80 ? '✨ Excellent Protection' : 
-                       result.score >= 50 ? '🛡️ Moderate Protection' : 
-                       '⚠️ Critical Gaps Found'}
+                      {result.score >= 80 ? '✨ ' + (lang === 'en' ? 'Excellence' : 'ดีเยี่ยม') : 
+                       result.score >= 50 ? '🛡️ ' + (lang === 'en' ? 'Moderate' : 'ปานกลาง') : 
+                       '⚠️ ' + (lang === 'en' ? 'Poor' : 'ควรปรับปรุง')}
                     </span>
                   </div>
                 </div>
-                <p className="text-slate-400 text-lg leading-relaxed max-w-2xl">
+                <div className="text-right">
+                   <span className="text-6xl font-black tabular-nums tracking-tighter" style={{ color: getScoreColor(result.score) }}>{result.score}%</span>
+                </div>
+              </div>
+
+              <div className="w-full space-y-4">
+                {/* Horizontal Bar Gauge */}
+                <div className="relative pt-6">
+                  <div className="flex justify-between w-full px-1 mb-3">
+                    <span className="text-xs font-black text-rose-400 uppercase tracking-widest">{lang === 'en' ? 'Poor' : 'ควรปรับปรุง'}</span>
+                    <span className="text-xs font-black text-amber-400 uppercase tracking-widest">{lang === 'en' ? 'Moderate' : 'ปานกลาง'}</span>
+                    <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">{lang === 'en' ? 'Excellence' : 'ดีเยี่ยม'}</span>
+                  </div>
+
+                  <div className="h-6 w-full bg-white/5 rounded-full overflow-hidden relative p-[3px]">
+                    <div className="h-full w-full rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 opacity-80 shadow-inner"></div>
+                  </div>
+
+                  {/* Needle Pointer */}
+                  <div 
+                    className="absolute top-8 bottom-0 w-1.5 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-all duration-1500 ease-out z-10 rounded-full"
+                    style={{ 
+                      left: `${displayScore}%`,
+                      transform: 'translateX(-50%)',
+                      height: '40px'
+                    }}
+                  >
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full border-2 border-slate-900 shadow-lg"></div>
+                  </div>
+                </div>
+
+                <p className="text-slate-400 text-lg leading-relaxed mt-6 max-w-2xl">
                   {result.score >= 80 
-                    ? (lang === 'en' ? "Your current portfolio is robust and well-balanced. You have covered major risks according to industry standards." : "พอร์ตโฟลิโอของคุณแข็งแกร่งและสมดุลเป็นอย่างดี คุณได้รับความคุ้มครองความเสี่ยงหลักตามมาตรฐานอุตสาหกรรมแล้ว")
+                    ? (lang === 'en' ? "Excellent protection! Your current portfolio is robust and well-balanced." : "ความคุ้มครองดีเยี่ยม! พอร์ตโฟลิโอของคุณแข็งแกร่งและสมดุลเป็นอย่างดี")
                     : result.score >= 50 
-                    ? (lang === 'en' ? "Your protection is decent but lacks specialization in key areas. Consider strengthening the gaps identified below." : "ความคุ้มครองของคุณอยู่ในระดับพอใช้แต่ยังขาดความเฉพาะเจาะจงในบางด้าน ควรพิจารณาเสริมความแข็งแกร่งในจุดที่ยังเป็นช่องว่าง")
-                    : (lang === 'en' ? "Urgent attention required. Significant financial exposure detected. Follow the recommendations to secure your family's future." : "ต้องการการดูแลอย่างเร่งด่วน พบความเสี่ยงทางการเงินที่สำคัญ โปรดปฏิบัติตามคำแนะนำเพื่อรักษาอนาคตของครอบครัวคุณ")
+                    ? (lang === 'en' ? "Moderate coverage. Your protection is decent but lacks specialization in key areas." : "ความคุ้มครองระดับปานกลาง มีความคุ้มครองพอสมควรแต่ยังขาดความเฉพาะเจาะจงในบางด้าน")
+                    : (lang === 'en' ? "Poor coverage detected. Urgent attention required to secure your financial future." : "พบช่องว่างความคุ้มครองที่ควรปรับปรุง ต้องการการดูแลอย่างเร่งด่วนเพื่อความมั่นคงทางการเงินของคุณ")
                   }
                 </p>
               </div>

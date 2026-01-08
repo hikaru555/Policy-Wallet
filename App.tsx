@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument, User, UserRole } from './types';
 import { translations, Language } from './translations';
-import { cloudSyncService } from './services/cloudSyncService';
 import Dashboard from './components/Dashboard';
 import PolicyList from './components/PolicyList';
 import GapAnalysisView from './components/GapAnalysisView';
@@ -16,9 +15,11 @@ import ShareReportModal from './components/ShareReportModal';
 import TaxOptimizationView from './components/TaxOptimizationView';
 import LoginView from './components/LoginView';
 import AdminConsole from './components/AdminConsole';
-import GuestView from './components/GuestView';
+import ProtectionIndex from './components/ProtectionIndex';
+import { storageManager, STORAGE_KEYS } from './services/storageManager';
 
-const AGENT_PHOTO_URL = "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=256&h=256&auto=format&fit=crop"; 
+// Initialize Versioned Storage
+storageManager.init();
 
 const AppLogo = ({ className = "", id = "main" }: { className?: string, id?: string }) => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shadow-lg rounded-xl flex-shrink-0 ${className}`}>
@@ -37,12 +38,7 @@ const AppLogo = ({ className = "", id = "main" }: { className?: string, id?: str
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('pw_session');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [guestData, setGuestData] = useState<{ policies: Policy[], profile: UserProfile } | null>(null);
-  const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(() => storageManager.load<User | null>(STORAGE_KEYS.SESSION, null));
   
   const t = translations[lang];
 
@@ -50,16 +46,9 @@ const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Business State
-  const [policies, setPolicies] = useState<Policy[]>([]);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [protectionScore, setProtectionScore] = useState<number | null>(null);
-  
-  // Sync Status State
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [isCloudSynced, setIsCloudSynced] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  
-  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [policies, setPolicies] = useState<Policy[]>(() => storageManager.load<Policy[]>(STORAGE_KEYS.POLICIES, []));
+  const [profile, setProfile] = useState<UserProfile | null>(() => storageManager.load<UserProfile | null>(STORAGE_KEYS.PROFILE, null));
+  const [protectionScore, setProtectionScore] = useState<number | null>(() => storageManager.load<number | null>(STORAGE_KEYS.SCORE, null));
 
   const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'vault' | 'profile' | 'admin'>('overview');
   const [isAddingPolicy, setIsAddingPolicy] = useState(false);
@@ -68,127 +57,33 @@ const App: React.FC = () => {
   const [policyIdToDelete, setPolicyIdToDelete] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // 1. Initial Data Hydration: Pull from Database first, then fallback to Local
+  // Persistence logic using storageManager
   useEffect(() => {
-    const initData = async () => {
-      setDataLoaded(false);
-      
-      const params = new URLSearchParams(window.location.search);
-      const viewId = params.get('view');
-
-      if (viewId) {
-        setIsGuestLoading(true);
-        const data = await cloudSyncService.getPublicView(viewId);
-        if (data) {
-          setGuestData(data);
-          setIsGuestLoading(false);
-          return;
-        }
-        setIsGuestLoading(false);
-      }
-
-      // Load Local Cache immediately for better UX
-      const savedPolicies = localStorage.getItem('pw_policies');
-      const savedProfile = localStorage.getItem('pw_profile');
-      const savedScore = localStorage.getItem('pw_protection_score');
-      
-      const localPolicies = savedPolicies ? JSON.parse(savedPolicies) : [];
-      const localProfile = savedProfile ? JSON.parse(savedProfile) : null;
-
-      setPolicies(localPolicies);
-      setProfile(localProfile);
-      if (savedScore) setProtectionScore(Number(savedScore));
-
-      if (user) {
-        setIsSyncing(true);
-        try {
-          const cloudData = await cloudSyncService.getFullData(user.id);
-          if (cloudData && (cloudData.policies?.length > 0 || cloudData.profile)) {
-            // Cloud has data: Sync local cache to cloud state
-            setPolicies(cloudData.policies || []);
-            setProfile(cloudData.profile || null);
-            localStorage.setItem('pw_policies', JSON.stringify(cloudData.policies));
-            if (cloudData.profile) localStorage.setItem('pw_profile', JSON.stringify(cloudData.profile));
-            setIsCloudSynced(true);
-          } else if (localPolicies.length > 0 || localProfile) {
-            // Cloud empty, local has data: Perform migration to DB
-            const pSuccess = await cloudSyncService.savePolicies(user.id, localPolicies);
-            const prSuccess = localProfile ? await cloudSyncService.saveProfile(user.id, localProfile) : true;
-            setIsCloudSynced(pSuccess && prSuccess);
-          }
-        } catch (err) {
-          console.error("Initial Cloud Fetch Failed:", err);
-          setIsCloudSynced(false);
-        } finally {
-          setIsSyncing(false);
-          setDataLoaded(true);
-        }
-      } else {
-        setDataLoaded(true);
-      }
-    };
-    initData();
-  }, [user?.id]);
-
-  // 2. Continuous Synchronization Effect
-  // This effect watches for ANY change in policies or profile and records it to the database.
-  useEffect(() => {
-    if (!dataLoaded) return;
-
-    // 1. Update Local Storage for offline persistence
-    localStorage.setItem('pw_policies', JSON.stringify(policies));
-    if (profile) localStorage.setItem('pw_profile', JSON.stringify(profile));
-
-    // 2. Sync with Cloud SQL with Debounce (Avoid spamming on quick edits)
-    if (user) {
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-      
-      setIsSyncing(true); // Show immediate sync feedback
-      
-      syncTimeoutRef.current = setTimeout(async () => {
-        try {
-          const pSuccess = await cloudSyncService.savePolicies(user.id, policies);
-          let prSuccess = true;
-          if (profile) prSuccess = await cloudSyncService.saveProfile(user.id, profile);
-          
-          setIsCloudSynced(pSuccess && prSuccess);
-        } catch (err) {
-          console.error("Cloud Sync Error:", err);
-          setIsCloudSynced(false);
-        } finally {
-          setIsSyncing(false);
-        }
-      }, 1000); 
-    }
-  }, [policies, profile, user?.id, dataLoaded]);
+    storageManager.save(STORAGE_KEYS.POLICIES, policies);
+  }, [policies]);
 
   useEffect(() => {
-    if (protectionScore !== null) {
-      localStorage.setItem('pw_protection_score', protectionScore.toString());
-    }
+    if (profile) storageManager.save(STORAGE_KEYS.PROFILE, profile);
+  }, [profile]);
+
+  useEffect(() => {
+    if (protectionScore !== null) storageManager.save(STORAGE_KEYS.SCORE, protectionScore);
   }, [protectionScore]);
 
   const handleLogin = (newUser: User) => {
-    localStorage.setItem('pw_session', JSON.stringify(newUser));
+    storageManager.save(STORAGE_KEYS.SESSION, newUser);
     setUser(newUser); 
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('pw_session');
-    localStorage.removeItem('pw_policies');
-    localStorage.removeItem('pw_profile');
-    localStorage.removeItem('pw_protection_score');
+    storageManager.wipeAll();
     setPolicies([]);
     setProfile(null);
     setProtectionScore(null);
     setActiveTab('overview');
-    setIsCloudSynced(false);
     setIsMobileMenuOpen(false);
-    setDataLoaded(false);
   };
-
-  // CRUD HANDLERS (Database persistence is handled by the Effect above)
 
   const handleSavePolicy = (policy: Policy) => {
     if (editingPolicy) {
@@ -216,7 +111,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUploadDocument = async (policyId: string, doc: PolicyDocument) => {
+  const handleUploadDocument = (policyId: string, doc: PolicyDocument) => {
     setPolicies(prev => prev.map(p => {
       if (p.id === policyId) {
         return { ...p, documents: [...(p.documents || []), doc] };
@@ -225,14 +120,7 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleDeleteDocument = async (policyId: string, docId: string) => {
-    const policy = policies.find(p => p.id === policyId);
-    const doc = policy?.documents?.find(d => d.id === docId);
-
-    if (user && doc?.url.includes('storage.googleapis.com')) {
-      await cloudSyncService.deleteFile(user.id, doc.url);
-    }
-
+  const handleDeleteDocument = (policyId: string, docId: string) => {
     setPolicies(prev => prev.map(p => {
       if (p.id === policyId) {
         return { ...p, documents: (p.documents || []).filter(d => d.id !== docId) };
@@ -263,20 +151,29 @@ const App: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
-  if (guestData) return <GuestView policies={guestData.policies} profile={guestData.profile} lang={lang} />;
-
-  if (isGuestLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-6">
-        <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p className="text-slate-400 font-bold tracking-widest uppercase text-xs">Decrypting Digital Portfolio...</p>
-      </div>
-    );
-  }
-
   if (!user) return <LoginView onLogin={handleLogin} lang={lang} />;
 
   const isPro = user.role === 'Pro-Member' || user.role === 'Admin';
+
+  const ProfileRequiredView = () => (
+    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200 text-center space-y-6">
+      <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-5xl">👤</div>
+      <div className="max-w-md space-y-2">
+        <h3 className="text-2xl font-black text-slate-800">{lang === 'en' ? 'Profile Information Required' : 'ต้องระบุข้อมูลส่วนตัว'}</h3>
+        <p className="text-slate-500 text-sm">
+          {lang === 'en' 
+            ? 'To provide accurate AI analysis and tax optimization, we need some basic financial information first.' 
+            : 'เพื่อให้ AI สามารถวิเคราะห์ช่องว่างความคุ้มครองและวางแผนภาษีได้อย่างแม่นยำ โปรดระบุข้อมูลพื้นฐานทางการเงินของคุณก่อน'}
+        </p>
+      </div>
+      <button 
+        onClick={() => setActiveTab('profile')}
+        className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+      >
+        {t.updateProfile}
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
@@ -307,27 +204,14 @@ const App: React.FC = () => {
             </button>
           )}
 
-          {/* CLOUD DATABASE SYNC STATUS */}
           <div className="pt-4 mt-4 border-t border-slate-100">
-            <div className={`px-4 py-3 rounded-xl border transition-all mb-2 ${
-              isSyncing ? 'bg-blue-50 border-blue-100 shadow-sm' : 
-              isCloudSynced ? 'bg-emerald-50 border-emerald-100' : 
-              'bg-amber-50 border-amber-100'
-            }`}>
+            <div className="px-4 py-3 rounded-xl border border-emerald-50 bg-emerald-50/50">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.syncStatus}</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                  isSyncing ? 'bg-blue-500 animate-ping' : 
-                  isCloudSynced ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 
-                  'bg-amber-500 animate-pulse'
-                }`}></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               </div>
-              <p className={`text-[10px] font-black uppercase tracking-tighter ${
-                isSyncing ? 'text-blue-700' : 
-                isCloudSynced ? 'text-emerald-700' : 
-                'text-amber-700'
-              }`}>
-                {isSyncing ? 'Recording to DB...' : isCloudSynced ? t.cloudSync : t.localStorage}
+              <p className="text-[10px] font-black uppercase tracking-tighter text-emerald-700">
+                {t.localStorage}
               </p>
             </div>
           </div>
@@ -347,13 +231,35 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 p-4 md:p-10 space-y-8 overflow-y-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 capitalize tracking-tight">{activeTab}</h2>
-            <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{user.name}</b></p>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
+            </button>
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 capitalize tracking-tight">{t[activeTab as keyof typeof t] || activeTab}</h2>
+              <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{user.name}</b></p>
+            </div>
           </div>
           <div className="flex items-center space-x-3">
-            {activeTab === 'overview' && policies.length > 0 && <button onClick={() => setIsShareModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-md active:scale-95">{t.shareReport}</button>}
-            {(activeTab === 'overview' || activeTab === 'policies') && <button onClick={toggleAddingPolicy} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm active:scale-95">{(isAddingPolicy || editingPolicy) ? t.cancel : `+ ${t.addPolicy}`}</button>}
+            {activeTab === 'overview' && policies.length > 0 && (
+              <button 
+                onClick={() => setIsShareModalOpen(true)} 
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold shadow-sm active:scale-95 transition-colors hover:bg-slate-50"
+              >
+                {t.shareReport}
+              </button>
+            )}
+            {(activeTab === 'overview' || activeTab === 'policies') && (
+              <button 
+                onClick={toggleAddingPolicy} 
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-md active:scale-95 transition-all hover:bg-indigo-700"
+              >
+                {(isAddingPolicy || editingPolicy) ? t.cancel : `+ ${t.addPolicy}`}
+              </button>
+            )}
           </div>
         </header>
 
@@ -361,7 +267,11 @@ const App: React.FC = () => {
           <div className="space-y-8 animate-in fade-in duration-500">
             {policies.length > 0 ? (
               <>
-                <Dashboard policies={policies} onViewDetails={setViewingPolicy} lang={lang} />
+                <Dashboard 
+                  policies={policies} 
+                  onViewDetails={setViewingPolicy} 
+                  lang={lang} 
+                />
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2"><PolicyList policies={policies} onDelete={handleDeletePolicy} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} /></div>
                   <div className="space-y-6">
@@ -370,14 +280,20 @@ const App: React.FC = () => {
                       <p className="text-blue-100 text-sm mb-4 leading-relaxed">{t.lineDesc}</p>
                       <button onClick={handleConnectLine} className="w-full py-2.5 bg-white text-blue-600 rounded-lg font-bold text-sm shadow-lg">{t.connectLine}</button>
                     </div>
+
+                    <ProtectionIndex 
+                      score={protectionScore} 
+                      onRunAnalysis={() => setActiveTab('analysis')} 
+                      lang={lang} 
+                    />
                   </div>
                 </div>
               </>
             ) : (
               <div className="text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
                 <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6"><span className="text-5xl">📁</span></div>
-                <h3 className="text-2xl font-black text-slate-800 mb-2">No policies found</h3>
-                <button onClick={toggleAddingPolicy} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl">+ Add to Database</button>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">{lang === 'en' ? 'No policies found' : 'ไม่พบข้อมูลกรมธรรม์'}</h3>
+                <button onClick={toggleAddingPolicy} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 transition-all active:scale-95 hover:bg-indigo-700">+ {t.addPolicy}</button>
               </div>
             )}
           </div>
@@ -390,8 +306,8 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'analysis' && profile && <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} />}
-        {activeTab === 'tax' && profile && <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} />}
+        {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} /> : <ProfileRequiredView />)}
+        {activeTab === 'tax' && (profile ? <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} /> : <ProfileRequiredView />)}
         {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={setProfile} lang={lang} policies={policies} onImport={handleImportPortfolio} />}
         {activeTab === 'vault' && <VaultView policies={policies} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} lang={lang} isPro={isPro} user={user} />}
         {activeTab === 'admin' && <AdminConsole currentUser={user} lang={lang} />}
@@ -401,6 +317,14 @@ const App: React.FC = () => {
       <PolicyDetailsModal policy={viewingPolicy} onClose={() => setViewingPolicy(null)} onEdit={handleEditPolicy} lang={lang} />
       <ConfirmDialog isOpen={!!policyIdToDelete} title={lang === 'en' ? "Delete Policy" : "ลบกรมธรรม์"} message={t.confirmDelete} onConfirm={confirmDeletePolicy} onCancel={() => setPolicyIdToDelete(null)} lang={lang} />
       {profile && <ShareReportModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} policies={policies} profile={profile} user={user} lang={lang} />}
+      
+      {/* Mobile Menu Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </div>
   );
 };

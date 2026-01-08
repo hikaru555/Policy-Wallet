@@ -125,8 +125,21 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const premium = Number(parseCommas(basicInfo.premiumAmount));
-    if (isNaN(premium) || premium < 0) return;
+    
+    // Validate required fields
+    const premiumRaw = parseCommas(basicInfo.premiumAmount);
+    if (!basicInfo.planName.trim() || !basicInfo.dueDate || !premiumRaw) {
+      alert(lang === 'en' 
+        ? "Plan Name, Premium, and Due Date are required fields." 
+        : "กรุณากรอกชื่อแผน, เบี้ยประกัน และวันครบกำหนด ให้ครบถ้วน");
+      return;
+    }
+
+    const premium = Number(premiumRaw);
+    if (isNaN(premium) || premium < 0) {
+      alert(lang === 'en' ? "Invalid premium amount." : "จำนวนเบี้ยประกันไม่ถูกต้อง");
+      return;
+    }
 
     const policy: Policy = {
       id: initialPolicy?.id || Math.random().toString(36).substr(2, 9),
@@ -190,23 +203,25 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Plan Name</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Plan Name *</label>
             <input 
               type="text" 
               placeholder="Gold Plan, Plus, etc."
               className={inputClasses} 
               value={basicInfo.planName} 
               onChange={(e) => setBasicInfo({ ...basicInfo, planName: e.target.value })} 
+              required
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium *</label>
             <input 
               type="text" 
               inputMode="decimal"
               className={inputClasses} 
               value={basicInfo.premiumAmount} 
               onChange={handlePremiumChange} 
+              required
             />
           </div>
           <div>
@@ -222,12 +237,14 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date *</label>
             <input 
               type="date" 
               className={inputClasses} 
               value={basicInfo.dueDate} 
               onChange={(e) => setBasicInfo({ ...basicInfo, dueDate: e.target.value })} 
+              onKeyDown={(e) => e.preventDefault()}
+              required
             />
           </div>
         </div>

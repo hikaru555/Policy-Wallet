@@ -3,7 +3,6 @@ import React, { useRef, useState } from 'react';
 import { translations, Language } from '../translations';
 import { Policy, PolicyDocument, User } from '../types';
 import ConfirmDialog from './ConfirmDialog';
-import { cloudSyncService } from '../services/cloudSyncService';
 
 interface VaultViewProps {
   policies: Policy[];
@@ -27,36 +26,33 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
     (p.documents || []).map(d => ({ ...d, policyName: p.planName, company: p.company, policyId: p.id }))
   ).sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
 
-  const policyDocs = allDocs.filter(d => d.category === 'Policy');
-  const receiptDocs = allDocs.filter(d => d.category === 'Receipt');
-  const medicalDocs = allDocs.filter(d => d.category === 'Medical');
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isPro || !user) return;
+    if (!isPro) return;
     const file = e.target.files?.[0];
     if (!file || !selectedPolicyId) return;
 
     setIsUploading(true);
-    try {
-      const result = await cloudSyncService.uploadFile(user.id, file);
-      if (result) {
-        const newDoc: PolicyDocument = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: result.name,
-          category: selectedCategory,
-          mimeType: result.mimeType,
-          url: result.url,
-          uploadDate: new Date().toISOString()
-        };
-        onUpload(selectedPolicyId, newDoc);
-        setShowUploadModal(false);
-      }
-    } catch (err) {
-      console.error("Cloud Upload failed", err);
-    } finally {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      const newDoc: PolicyDocument = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        category: selectedCategory,
+        mimeType: file.type,
+        url: base64,
+        uploadDate: new Date().toISOString()
+      };
+      onUpload(selectedPolicyId, newDoc);
       setIsUploading(false);
+      setShowUploadModal(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    };
+    reader.onerror = () => {
+      alert("Failed to read file.");
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const triggerUpload = () => {
@@ -84,7 +80,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
               <span className="mr-1">{isPro ? '✅' : '⭐'}</span> {isPro ? 'PRO VERSION ACTIVE' : t.proFeature}
             </div>
             <h3 className="text-3xl font-bold mb-3">{t.vaultTitle}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? 'Enjoy full access to your encrypted insurance document storage, backed by Google Cloud Storage.' : t.proDesc}</p>
+            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? 'Enjoy access to your local encrypted insurance document storage.' : t.proDesc}</p>
           </div>
           <div className="hidden lg:block">
              <div className="w-32 h-32 bg-slate-700/50 rounded-3xl flex items-center justify-center text-6xl shadow-inner border border-slate-600/50">
@@ -92,24 +88,6 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
              </div>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { icon: '📄', label: t.policyDoc, count: policyDocs.length },
-          { icon: '🧾', label: t.receiptDoc, count: receiptDocs.length },
-          { icon: '🏥', label: t.medicalDoc, count: medicalDocs.length }
-        ].map((cat, i) => (
-          <div key={i} className={`bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-shadow group ${isPro ? 'hover:shadow-md cursor-pointer' : 'opacity-60 grayscale'}`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center text-xl">
-                {cat.icon}
-              </div>
-              <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-lg">{cat.count} Files</span>
-            </div>
-            <h4 className="font-bold text-slate-800">{cat.label}</h4>
-          </div>
-        ))}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative">
@@ -148,7 +126,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                   <th className="px-6 py-3">{t.docCategory}</th>
                   <th className="px-6 py-3">File Name</th>
                   <th className="px-6 py-3">{t.companyPlan}</th>
-                  <th className="px-6 py-3">Cloud Status</th>
+                  <th className="px-6 py-3">Storage Status</th>
                   <th className="px-6 py-3 text-right">{t.action}</th>
                 </tr>
               </thead>
@@ -165,9 +143,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-slate-800 truncate max-w-[200px]">{doc.name}</span>
-                      </div>
+                      <span className="text-sm font-medium text-slate-800 truncate max-w-[200px]">{doc.name}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
@@ -178,12 +154,12 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-1.5">
                         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">Bucket Persisted</span>
+                        <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">Local Storage</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        <a href={doc.url} target="_blank" rel="noreferrer" className="p-1.5 text-slate-400 hover:text-blue-600"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg></a>
+                        <a href={doc.url} download={doc.name} className="p-1.5 text-slate-400 hover:text-blue-600"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg></a>
                         <button onClick={() => setDocToDelete({ policyId: doc.policyId, docId: doc.id, name: doc.name })} className="p-1.5 text-slate-400 hover:text-red-600"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                       </div>
                     </td>
