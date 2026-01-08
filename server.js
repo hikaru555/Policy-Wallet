@@ -21,6 +21,32 @@ const dbConfig = {
 
 const pool = new Pool(dbConfig);
 
+// 2. Database Initialization
+const initDb = async () => {
+  console.log('--- Initializing Database ---');
+  try {
+    const client = await pool.connect();
+    console.log('✅ Connected to PostgreSQL');
+    
+    // Create users table if not exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        policies JSONB DEFAULT '[]'::jsonb,
+        profile JSONB DEFAULT '{}'::jsonb,
+        last_sync TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Users table is ready');
+    client.release();
+  } catch (err) {
+    console.error('❌ Database Initialization Failed:', err.message);
+    console.error('Please check your DB_USER, DB_PASSWORD, and DB_HOST environment variables.');
+  }
+};
+
+initDb();
+
 // --- ENDPOINTS ---
 
 // Get Combined Portfolio Data (Policies + Profile)
@@ -33,7 +59,7 @@ app.get('/api/portfolio/:userId', async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Fetch Portfolio Error:', err);
+    console.error('Fetch Portfolio Error:', err.message);
     res.status(500).json({ error: 'Failed to fetch portfolio' });
   }
 });
@@ -48,12 +74,14 @@ app.post('/api/policies/sync', async (req, res) => {
     const query = `
       INSERT INTO users (id, policies, last_sync) 
       VALUES ($1, $2, NOW()) 
-      ON CONFLICT (id) DO UPDATE SET policies = $2, last_sync = NOW()
+      ON CONFLICT (id) DO UPDATE SET 
+        policies = EXCLUDED.policies, 
+        last_sync = NOW()
     `;
     await pool.query(query, [userId, JSON.stringify(policies)]);
     res.json({ success: true });
   } catch (err) {
-    console.error('SQL Sync Policies Error:', err);
+    console.error('SQL Sync Policies Error:', err.message);
     res.status(500).json({ error: 'Database sync failed' });
   }
 });
@@ -68,12 +96,14 @@ app.post('/api/profile/sync', async (req, res) => {
     const query = `
       INSERT INTO users (id, profile, last_sync) 
       VALUES ($1, $2, NOW()) 
-      ON CONFLICT (id) DO UPDATE SET profile = $2, last_sync = NOW()
+      ON CONFLICT (id) DO UPDATE SET 
+        profile = EXCLUDED.profile, 
+        last_sync = NOW()
     `;
     await pool.query(query, [userId, JSON.stringify(profile)]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Profile sync failed', err);
+    console.error('Profile sync failed:', err.message);
     res.status(500).json({ error: 'Profile sync failed' });
   }
 });
@@ -86,6 +116,7 @@ app.get('/api/public/view/:userId', async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
   } catch (err) {
+    console.error('Public fetch failed:', err.message);
     res.status(500).json({ error: 'Public fetch failed' });
   }
 });
@@ -93,4 +124,7 @@ app.get('/api/public/view/:userId', async (req, res) => {
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Bridge Server running on port ${PORT}`);
+  console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
+});

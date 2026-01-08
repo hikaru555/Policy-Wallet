@@ -122,7 +122,7 @@ const App: React.FC = () => {
             setIsCloudSynced(pSuccess && prSuccess);
           }
         } catch (err) {
-          console.warn("Cloud SQL unavailable. Continuing in offline/local mode.");
+          console.warn("Sync Initial Hydration Failed:", err);
           setIsCloudSynced(false);
         } finally {
           setIsSyncing(false);
@@ -147,15 +147,19 @@ const App: React.FC = () => {
     if (user) {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
       
-      setIsSyncing(true);
       syncTimeoutRef.current = setTimeout(async () => {
+        setIsSyncing(true);
         try {
           const pSuccess = await cloudSyncService.savePolicies(user.id, policies);
           let prSuccess = true;
           if (profile) prSuccess = await cloudSyncService.saveProfile(user.id, profile);
           
           setIsCloudSynced(pSuccess && prSuccess);
+          if (!(pSuccess && prSuccess)) {
+            console.warn("Cloud Sync unsuccessful - check backend connectivity.");
+          }
         } catch (err) {
+          console.error("Critical Sync Failure:", err);
           setIsCloudSynced(false);
         } finally {
           setIsSyncing(false);
