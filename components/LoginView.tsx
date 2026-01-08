@@ -62,8 +62,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
       
       if (err?.message?.includes("Requested entity was not found.")) {
         setError(lang === 'en' 
-          ? "GCP Billing required for this project. Please select a paid project." 
-          : "โปรเจกต์นี้ต้องเปิดใช้งานการชำระเงินใน GCP โปรดเลือกโปรเจกต์ที่ตั้งค่าไว้แล้ว");
+          ? "Selected project configuration is invalid. Please select an active project." 
+          : "การตั้งค่าโปรเจกต์ที่เลือกไม่ถูกต้อง โปรดเลือกโปรเจกต์ที่ใช้งานได้");
         if (aistudio) await aistudio.openSelectKey();
       } else {
         // Fallback to simulation to keep the flow moving
@@ -141,17 +141,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, lang }) => {
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed px-4">
               {t.tosAgreement}
             </p>
-          </div>
-          
-          <div className="p-4 bg-slate-100 text-center border-t border-slate-200">
-             <a 
-               href="https://ai.google.dev/gemini-api/docs/billing" 
-               target="_blank" 
-               rel="noreferrer"
-               className="text-[9px] text-slate-400 hover:text-indigo-600 font-bold uppercase tracking-[0.2em] transition-colors"
-             >
-               Billing Requirements ↗
-             </a>
           </div>
         </div>
       </div>

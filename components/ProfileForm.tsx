@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { translations, Language } from '../translations';
 
@@ -11,11 +11,33 @@ interface ProfileFormProps {
 
 const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang }) => {
   const t = translations[lang];
+  
+  // Use a local state that allows strings for numeric fields to fix the "cannot delete 0" bug
   const [formData, setFormData] = useState<UserProfile>(initialProfile);
+  const [incomeStr, setIncomeStr] = useState(initialProfile.annualIncome.toString());
+  const [expenseStr, setExpenseStr] = useState(initialProfile.monthlyExpenses.toString());
+  const [debtStr, setDebtStr] = useState(initialProfile.totalDebt.toString());
+
+  // Keep strings in sync with initialProfile updates if they happen
+  useEffect(() => {
+    setFormData(initialProfile);
+    setIncomeStr(initialProfile.annualIncome.toString());
+    setExpenseStr(initialProfile.monthlyExpenses.toString());
+    setDebtStr(initialProfile.totalDebt.toString());
+  }, [initialProfile]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Convert strings back to numbers for the final save
+    const finalProfile: UserProfile = {
+      ...formData,
+      annualIncome: parseInt(incomeStr) || 0,
+      monthlyExpenses: parseInt(expenseStr) || 0,
+      totalDebt: parseInt(debtStr) || 0
+    };
+    
+    onSave(finalProfile);
     alert(lang === 'en' ? "Profile saved!" : "บันทึกข้อมูลแล้ว!");
   };
 
@@ -47,7 +69,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
             <h4 className="font-bold text-xs text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">{t.identity}</h4>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.fullName}</label>
-              <input type="text" className={inputClasses} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <input 
+                type="text" 
+                className={inputClasses} 
+                value={formData.name} 
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -75,7 +102,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.dependents}</label>
-                <input type="number" min="0" className={inputClasses} value={formData.dependents} onChange={(e) => setFormData({ ...formData, dependents: Math.max(0, parseInt(e.target.value) || 0) })} />
+                <input 
+                  type="number" 
+                  min="0" 
+                  className={inputClasses} 
+                  value={formData.dependents} 
+                  onChange={(e) => setFormData({ ...formData, dependents: Math.max(0, parseInt(e.target.value) || 0) })} 
+                />
               </div>
             </div>
           </div>
@@ -87,21 +120,39 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang 
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.income} (Yearly)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                <input type="number" min="0" className={`${inputClasses} pl-8`} value={formData.annualIncome} onChange={(e) => setFormData({ ...formData, annualIncome: Math.max(0, parseInt(e.target.value) || 0) })} />
+                <input 
+                  type="number" 
+                  min="0" 
+                  className={`${inputClasses} pl-8`} 
+                  value={incomeStr} 
+                  onChange={(e) => setIncomeStr(e.target.value)} 
+                />
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.expenses} (Monthly)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                <input type="number" min="0" className={`${inputClasses} pl-8`} value={formData.monthlyExpenses} onChange={(e) => setFormData({ ...formData, monthlyExpenses: Math.max(0, parseInt(e.target.value) || 0) })} />
+                <input 
+                  type="number" 
+                  min="0" 
+                  className={`${inputClasses} pl-8`} 
+                  value={expenseStr} 
+                  onChange={(e) => setExpenseStr(e.target.value)} 
+                />
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.totalDebt}</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                <input type="number" min="0" className={`${inputClasses} pl-8 text-red-600`} value={formData.totalDebt} onChange={(e) => setFormData({ ...formData, totalDebt: Math.max(0, parseInt(e.target.value) || 0) })} />
+                <input 
+                  type="number" 
+                  min="0" 
+                  className={`${inputClasses} pl-8 text-rose-600 font-bold`} 
+                  value={debtStr} 
+                  onChange={(e) => setDebtStr(e.target.value)} 
+                />
               </div>
             </div>
           </div>
