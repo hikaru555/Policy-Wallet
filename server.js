@@ -9,10 +9,14 @@ const multer = require('multer');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-app.use(cors());
+// 1. Core Middleware
+app.use(cors({
+  origin: '*', // Open for discovery ping, can be narrowed in production
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS']
+}));
 app.use(express.json({ limit: '10mb' }));
 
-// 1. Production-Grade Configuration
+// 2. Production-Grade Configuration
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.K_SERVICE;
 const CLOUD_SQL_CONNECTION_NAME = process.env.CLOUD_SQL_CONNECTION_NAME || 'gen-lang-client-0928682283:us-central1:tiered-web-app-db-bbbd';
 const BUCKET_NAME = 'policywallet';
@@ -23,7 +27,7 @@ const dbConfig = {
   database: 'policywallet',
   host: isProduction ? `/cloudsql/${CLOUD_SQL_CONNECTION_NAME}` : 'localhost',
   port: 5432,
-  connectionTimeoutMillis: 2000, // Short timeout to fail fast
+  connectionTimeoutMillis: 3000, 
   max: 10,
 };
 
@@ -47,7 +51,7 @@ try {
 const storage = new Storage();
 const bucket = storage.bucket(BUCKET_NAME);
 
-// 2. Background Database Initialization
+// 3. Background Database Initialization (Non-blocking)
 const initDb = async () => {
   if (!pool) return;
   try {
@@ -62,7 +66,7 @@ const initDb = async () => {
     `);
     client.release();
     dbStatus = 'connected';
-    console.log('✅ PostgreSQL Ready');
+    console.log('✅ PostgreSQL Schema Verified');
   } catch (err) {
     dbStatus = 'error';
     dbErrorMessage = err.message;
@@ -70,9 +74,11 @@ const initDb = async () => {
   }
 };
 
-// --- API ENDPOINTS (Optimized for speed) ---
+// --- API ENDPOINTS (Priority Order) ---
 
+// Pure Ping - Must be ultra-fast for discovery
 app.get('/api/ping', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
   res.status(200).json({ 
     status: 'ok', 
     timestamp: Date.now()
@@ -80,7 +86,6 @@ app.get('/api/ping', (req, res) => {
 });
 
 app.get('/api/admin/health', async (req, res) => {
-  // Check storage status quickly
   let storageStatus = 'checking';
   try {
     const [exists] = await bucket.exists();
@@ -103,7 +108,7 @@ app.get('/api/admin/health', async (req, res) => {
 
 // Portfolio Persistence
 app.get('/api/portfolio/:userId', async (req, res) => {
-  if (dbStatus !== 'connected') return res.status(503).json({ error: 'Database offline' });
+  if (dbStatus !== 'connected') return res.status(503).json({ error: 'Database unavailable' });
   try {
     const result = await pool.query('SELECT policies, profile FROM users WHERE id = $1', [req.params.userId]);
     res.json(result.rows[0] || { policies: [], profile: null });
@@ -178,7 +183,7 @@ app.get('*', (req, res, next) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 Bridge API online at port ${PORT}`);
-  // Start DB check after server is already responding to pings
+  console.log(`\n🚀 Policy Wallet Bridge listening on port ${PORT}`);
+  // Start DB check after server is responding to pings
   initDb();
 });
