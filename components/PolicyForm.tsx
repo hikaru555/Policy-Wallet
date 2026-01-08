@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { CoverageType, Policy, PaymentFrequency, PolicyCoverage, calculatePolicyStatus } from '../types';
 import { INSURANCE_COMPANIES } from '../constants';
@@ -243,7 +242,6 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
               className={inputClasses} 
               value={basicInfo.dueDate} 
               onChange={(e) => setBasicInfo({ ...basicInfo, dueDate: e.target.value })} 
-              onKeyDown={(e) => e.preventDefault()}
               required
             />
           </div>

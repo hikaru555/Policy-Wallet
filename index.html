@@ -22,6 +22,30 @@
       .animation-delay-2000 {
         animation-delay: 2s;
       }
+
+      /* Hide the default browser date placeholder (e.g., dd/mm/yyyy or วว/ดด/ปปปป) when empty */
+      input[type="date"]::-webkit-datetime-edit-text,
+      input[type="date"]::-webkit-datetime-edit-month-field,
+      input[type="date"]::-webkit-datetime-edit-day-field,
+      input[type="date"]::-webkit-datetime-edit-year-field {
+        color: transparent;
+      }
+      
+      /* Show the date format/values only when the input has a value or is focused */
+      input[type="date"]:focus::-webkit-datetime-edit-text,
+      input[type="date"]:focus::-webkit-datetime-edit-month-field,
+      input[type="date"]:focus::-webkit-datetime-edit-day-field,
+      input[type="date"]:focus::-webkit-datetime-edit-year-field,
+      input[type="date"]:not(:placeholder-shown)::-webkit-datetime-edit-text,
+      input[type="date"]:not(:placeholder-shown)::-webkit-datetime-edit-month-field,
+      input[type="date"]:not(:placeholder-shown)::-webkit-datetime-edit-day-field,
+      input[type="date"]:not(:placeholder-shown)::-webkit-datetime-edit-year-field,
+      input[type="date"]:valid::-webkit-datetime-edit-text,
+      input[type="date"]:valid::-webkit-datetime-edit-month-field,
+      input[type="date"]:valid::-webkit-datetime-edit-day-field,
+      input[type="date"]:valid::-webkit-datetime-edit-year-field {
+        color: inherit;
+      }
     </style>
   <script type="importmap">
 {
