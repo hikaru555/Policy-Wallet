@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { Pool } = require('pg');
 const { Storage } = require('@google-cloud/storage');
@@ -11,23 +10,24 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // 1. Core Middleware
 app.use(cors({
-  origin: '*', // Open for discovery ping, can be narrowed in production
+  origin: '*', 
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS']
 }));
 app.use(express.json({ limit: '10mb' }));
 
 // 2. Production-Grade Configuration
 const isProduction = process.env.NODE_ENV === 'production' || !!process.env.K_SERVICE;
+// Fallback for local dev, usually overridden by Cloud Run env vars
 const CLOUD_SQL_CONNECTION_NAME = process.env.CLOUD_SQL_CONNECTION_NAME || 'gen-lang-client-0928682283:us-central1:tiered-web-app-db-bbbd';
-const BUCKET_NAME = 'policywallet';
+const BUCKET_NAME = process.env.BUCKET_NAME || 'policywallet';
 
 const dbConfig = {
-  user: 'policywallet',
-  password: '.E9iAtlC[I5;g&<3',
-  database: 'policywallet',
+  user: process.env.DB_USER || 'policywallet',
+  password: process.env.DB_PASSWORD || '.E9iAtlC[I5;g&<3',
+  database: process.env.DB_NAME || 'policywallet',
   host: isProduction ? `/cloudsql/${CLOUD_SQL_CONNECTION_NAME}` : 'localhost',
   port: 5432,
-  connectionTimeoutMillis: 3000, 
+  connectionTimeoutMillis: 5000, 
   max: 10,
 };
 
@@ -35,7 +35,6 @@ let pool;
 let dbStatus = 'initializing';
 let dbErrorMessage = '';
 
-// Create pool immediately
 try {
   pool = new Pool(dbConfig);
   pool.on('error', (err) => {
@@ -51,7 +50,7 @@ try {
 const storage = new Storage();
 const bucket = storage.bucket(BUCKET_NAME);
 
-// 3. Background Database Initialization (Non-blocking)
+// 3. Background Database Initialization
 const initDb = async () => {
   if (!pool) return;
   try {
@@ -74,14 +73,14 @@ const initDb = async () => {
   }
 };
 
-// --- API ENDPOINTS (Priority Order) ---
+// --- API ENDPOINTS ---
 
-// Pure Ping - Must be ultra-fast for discovery
 app.get('/api/ping', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.status(200).json({ 
     status: 'ok', 
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    env: process.env.NODE_ENV
   });
 });
 
@@ -106,7 +105,6 @@ app.get('/api/admin/health', async (req, res) => {
   });
 });
 
-// Portfolio Persistence
 app.get('/api/portfolio/:userId', async (req, res) => {
   if (dbStatus !== 'connected') return res.status(503).json({ error: 'Database unavailable' });
   try {
@@ -174,16 +172,17 @@ app.delete('/api/vault/delete', async (req, res) => {
   }
 });
 
-// Static Assets
-app.use(express.static(__dirname));
+// Static Assets - Serve from root directory
+app.use(express.static(path.join(__dirname, '.')));
+
+// SPA Route - Serve index.html for all non-API paths
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.resolve(__dirname, 'index.html'));
 });
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 Policy Wallet Bridge listening on port ${PORT}`);
-  // Start DB check after server is responding to pings
+  console.log(`\n🚀 Policy Wallet Bridge listening on port ${PORT} (Mode: ${process.env.NODE_ENV || 'development'})`);
   initDb();
 });
