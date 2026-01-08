@@ -45,9 +45,10 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
     });
 
     const lifeHealthUsed = Math.min(lifeHealthSum, 100000);
-    // Pension limit is 200,000 AND max 15% of income
-    const pensionCapByIncome = profile.annualIncome * 0.15;
-    const pensionMaxLimit = Math.min(200000, pensionCapByIncome);
+    
+    // STRICT PENSION LOGIC: Lesser of 200,000 OR 15% of Annual Income
+    const pensionCapByPercent = profile.annualIncome * 0.15;
+    const pensionMaxLimit = Math.min(200000, pensionCapByPercent);
     const pensionUsed = Math.min(pensionSum, pensionMaxLimit);
 
     const calculateBracket = (income: number) => {
@@ -69,10 +70,10 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
       lifeHealthUsed,
       pensionUsed,
       pensionMaxLimit,
+      pensionCapByPercent,
       bracket,
       estSavings,
-      totalDeduction,
-      pensionCapByIncome
+      totalDeduction
     };
   }, [policies, profile]);
 
@@ -114,33 +115,44 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
           <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
             <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2">{t.lifeDeduction}</p>
             <h4 className="text-2xl font-black text-slate-900">฿{taxMetrics.lifeHealthUsed.toLocaleString()}</h4>
-            <div className="mt-3 flex items-center justify-between text-[10px] text-blue-400">
-              <span>{t.maxLimit}: ฿100k</span>
-              <span className="font-bold">{Math.round((taxMetrics.lifeHealthUsed / 100000) * 100)}%</span>
+            <div className="mt-3 flex items-center justify-between text-[10px] text-blue-400 font-bold uppercase">
+              <span>Limit: ฿100,000</span>
+              <span>{Math.round((taxMetrics.lifeHealthUsed / 100000) * 100)}%</span>
             </div>
             <div className="w-full h-1.5 bg-blue-100 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-blue-500" style={{ width: `${(taxMetrics.lifeHealthUsed / 100000) * 100}%` }}></div>
+              <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${(taxMetrics.lifeHealthUsed / 100000) * 100}%` }}></div>
             </div>
           </div>
 
-          <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100/50">
+          <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100/50 relative group">
             <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">{t.pensionDeduction}</p>
             <h4 className="text-2xl font-black text-slate-900">฿{taxMetrics.pensionUsed.toLocaleString()}</h4>
-            <div className="mt-3 flex items-center justify-between text-[10px] text-indigo-400">
-              <span title={`Max 15% of Income: ฿${taxMetrics.pensionCapByIncome.toLocaleString()}`}>{t.maxLimit}: ฿200k</span>
-              <span className="font-bold">{Math.round((taxMetrics.pensionUsed / taxMetrics.pensionMaxLimit) * 100)}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-indigo-100 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-indigo-500" style={{ width: `${(taxMetrics.pensionUsed / taxMetrics.pensionMaxLimit) * 100}%` }}></div>
+            
+            <div className="mt-3 flex flex-col space-y-1">
+              <div className="flex items-center justify-between text-[10px] text-indigo-400 font-bold uppercase">
+                <span className="flex items-center">
+                  Limit: ฿{taxMetrics.pensionMaxLimit.toLocaleString()}
+                  <span className="ml-1 text-[8px] opacity-70 cursor-help" title={`Lesser of 15% Income (฿${taxMetrics.pensionCapByPercent.toLocaleString()}) or 200,000`}>ℹ️</span>
+                </span>
+                <span>{Math.round((taxMetrics.pensionUsed / taxMetrics.pensionMaxLimit) * 100)}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-indigo-100 rounded-full mt-1 overflow-hidden">
+                <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${(taxMetrics.pensionUsed / taxMetrics.pensionMaxLimit) * 100}%` }}></div>
+              </div>
+              <p className="text-[8px] text-indigo-300 font-bold uppercase mt-1 tracking-tighter">
+                {taxMetrics.pensionCapByPercent < 200000 
+                  ? `*Limited by 15% of income (฿${taxMetrics.pensionCapByPercent.toLocaleString()})` 
+                  : `*Capped at max ฿200,000 limit`}
+              </p>
             </div>
           </div>
 
-          <div className="p-6 bg-slate-900 rounded-3xl text-white shadow-xl lg:col-span-2">
+          <div className="p-6 bg-slate-900 rounded-3xl text-white shadow-xl lg:col-span-2 flex flex-col justify-between">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.taxSavings}</p>
                 <h4 className="text-4xl font-black text-emerald-400">฿{taxMetrics.estSavings.toLocaleString()}</h4>
-                <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase tracking-widest">Total Deduction: ฿{taxMetrics.totalDeduction.toLocaleString()}</p>
+                <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase tracking-widest">Total Deduction Applied: ฿{taxMetrics.totalDeduction.toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.taxBracket}</p>

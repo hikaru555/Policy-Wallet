@@ -132,10 +132,12 @@ export const analyzeTaxOptimization = async (policies: Policy[], profile: UserPr
   const prompt = `
     Act as a Thai Tax Planning Expert. Review the client's insurance portfolio for tax optimization.
     
-    Thai Revenue Department Rules:
+    Thai Revenue Department Rules (STRICTLY ADHERE TO THESE):
     1. Life Insurance: Deduction up to ฿100,000.
     2. Health Insurance: Deduction up to ฿25,000 (Note: Combined with Life must not exceed ฿100,000).
-    3. Pension Insurance: Deduction up to ฿200,000 (Note: Must not exceed 15% of annual income, and combined retirement cap is ฿500,000).
+    3. Pension Insurance: Deduction up to ฿200,000. 
+       CRITICAL RULE: The pension deduction MUST NOT exceed 15% of the annual income, even if the premium paid is higher. 
+       If 15% of income is less than ฿200,000, then the 15% value is the ceiling.
     
     The TOTAL insurance deduction can reach ฿300,000 (100k Life/Health + 200k Pension).
 
@@ -146,7 +148,7 @@ export const analyzeTaxOptimization = async (policies: Policy[], profile: UserPr
     
     Task:
     1. Identify if the client is missing out on tax benefits.
-    2. Suggest specific ways to fill the tax deduction gaps (e.g., "Increase pension premium by ฿50k").
+    2. Suggest specific ways to fill the tax deduction gaps (e.g., "Increase pension premium by ฿50k, keeping it under your 15% income cap of ฿X").
     3. Calculate estimated total tax benefit based on Thai tax brackets.
 
     Output Language: ${lang === 'th' ? 'Thai' : 'English'}
