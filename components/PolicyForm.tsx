@@ -20,13 +20,13 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   const [basicInfo, setBasicInfo] = useState({
     company: INSURANCE_COMPANIES[0],
     planName: '',
-    premiumAmount: '', // Formatted string
+    premiumAmount: '',
     dueDate: '',
     frequency: PaymentFrequency.YEARLY,
   });
 
   const [coverages, setCoverages] = useState<any[]>([
-    { type: CoverageType.LIFE, sumAssured: '' } // sumAssured as string for formatting
+    { type: CoverageType.LIFE, sumAssured: '' }
   ]);
 
   const formatWithCommas = (value: string | number) => {
@@ -92,13 +92,11 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   const handleAiScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsScanning(true);
     const reader = new FileReader();
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
       const extractedData = await parsePolicyDocument(base64, file.type);
-      
       if (extractedData) {
         setBasicInfo({
           company: extractedData.company || INSURANCE_COMPANIES[0],
@@ -125,22 +123,16 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required fields
     const premiumRaw = parseCommas(basicInfo.premiumAmount);
     if (!basicInfo.planName.trim() || !basicInfo.dueDate || !premiumRaw) {
-      alert(lang === 'en' 
-        ? "Plan Name, Premium, and Due Date are required fields." 
-        : "กรุณากรอกชื่อแผน, เบี้ยประกัน และวันครบกำหนด ให้ครบถ้วน");
+      alert(lang === 'en' ? "Plan Name, Premium, and Due Date are required fields." : "กรุณากรอกชื่อแผน, เบี้ยประกัน และวันครบกำหนด ให้ครบถ้วน");
       return;
     }
-
     const premium = Number(premiumRaw);
     if (isNaN(premium) || premium < 0) {
       alert(lang === 'en' ? "Invalid premium amount." : "จำนวนเบี้ยประกันไม่ถูกต้อง");
       return;
     }
-
     const policy: Policy = {
       id: initialPolicy?.id || Math.random().toString(36).substr(2, 9),
       company: basicInfo.company,
@@ -165,75 +157,42 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
       {isScanning && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center space-y-4">
           <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-          <p className="font-bold text-blue-600 animate-pulse">{lang === 'en' ? 'AI Scanning your policy...' : 'AI กำลังวิเคราะห์กรมธรรม์ของคุณ...'}</p>
+          <p className="font-bold text-blue-600 animate-pulse">{t.scanningPolicy}</p>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <h4 className="font-bold text-lg">{initialPolicy ? t.edit : `+ ${t.addPolicy}`}</h4>
         {!initialPolicy && (
-          <button 
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all font-bold text-xs"
-          >
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all font-bold text-xs">
             <span>✨ AI Auto-fill from Scan</span>
           </button>
         )}
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleAiScan} 
-          className="hidden" 
-          accept="image/*,application/pdf"
-        />
+        <input type="file" ref={fileInputRef} onChange={handleAiScan} className="hidden" accept="image/*,application/pdf" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.company}</label>
-            <select 
-              className={inputClasses} 
-              value={basicInfo.company} 
-              onChange={(e) => setBasicInfo({ ...basicInfo, company: e.target.value })}
-            >
+            <select className={inputClasses} value={basicInfo.company} onChange={(e) => setBasicInfo({ ...basicInfo, company: e.target.value })}>
               {INSURANCE_COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.planName} *</label>
-            <input 
-              type="text" 
-              placeholder="Gold Plan, Plus, etc."
-              className={inputClasses} 
-              value={basicInfo.planName} 
-              onChange={(e) => setBasicInfo({ ...basicInfo, planName: e.target.value })} 
-              required
-            />
+            <input type="text" placeholder="Gold Plan, Plus, etc." className={inputClasses} value={basicInfo.planName} onChange={(e) => setBasicInfo({ ...basicInfo, planName: e.target.value })} required />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.premium} *</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-              <input 
-                type="text" 
-                inputMode="decimal"
-                className={`${inputClasses} pl-8`} 
-                value={basicInfo.premiumAmount} 
-                onChange={handlePremiumChange} 
-                required
-              />
+              <input type="text" inputMode="decimal" className={`${inputClasses} pl-8`} value={basicInfo.premiumAmount} onChange={handlePremiumChange} required />
             </div>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.frequency}</label>
-            <select 
-              className={inputClasses} 
-              value={basicInfo.frequency} 
-              onChange={(e) => setBasicInfo({ ...basicInfo, frequency: e.target.value as PaymentFrequency })}
-            >
+            <select className={inputClasses} value={basicInfo.frequency} onChange={(e) => setBasicInfo({ ...basicInfo, frequency: e.target.value as PaymentFrequency })}>
               <option value={PaymentFrequency.MONTHLY}>{t.monthly}</option>
               <option value={PaymentFrequency.QUARTERLY}>{t.quarterly}</option>
               <option value={PaymentFrequency.YEARLY}>{t.yearly}</option>
@@ -243,98 +202,45 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.dueDateLabel} *</label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               </div>
-              <input 
-                type="date" 
-                className={`${inputClasses} pl-10 appearance-none`} 
-                value={basicInfo.dueDate} 
-                onChange={(e) => setBasicInfo({ ...basicInfo, dueDate: e.target.value })} 
-                required
-              />
+              <input type="date" className={`${inputClasses} pl-10 appearance-none`} value={basicInfo.dueDate} onChange={(e) => setBasicInfo({ ...basicInfo, dueDate: e.target.value })} required />
             </div>
           </div>
         </div>
 
         <div className="h-px bg-slate-100" />
-
-        {/* Coverages Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{t.details}</label>
-            <button 
-              type="button" 
-              onClick={addCoverage}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800"
-            >
-              + Add Coverage Item
-            </button>
+            <button type="button" onClick={addCoverage} className="text-xs font-bold text-blue-600 hover:text-blue-800">+ Add Coverage Item</button>
           </div>
-          
           <div className="space-y-3">
             {coverages.map((c, idx) => (
               <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 relative group">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.coverageType}</label>
-                    <select 
-                      className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
-                      value={c.type} 
-                      onChange={(e) => updateCoverage(idx, 'type', e.target.value as CoverageType)}
-                    >
-                      {Object.values(CoverageType).map(v => (
-                        <option key={v} value={v}>
-                          {v}
-                        </option>
-                      ))}
+                    <select className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" value={c.type} onChange={(e) => updateCoverage(idx, 'type', e.target.value as CoverageType)}>
+                      {Object.values(CoverageType).map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.sumAssured}</label>
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span>
-                      <input 
-                        type="text" 
-                        inputMode="decimal"
-                        className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
-                        value={c.sumAssured} 
-                        onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} 
-                      />
-                    </div>
+                    <div className="relative"><span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span><input type="text" inputMode="decimal" className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" value={c.sumAssured} onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} /></div>
                   </div>
                   {(c.type === CoverageType.HEALTH || (c.type as any) === 'Health Insurance') && (
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.dailyRoomRate}</label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span>
-                        <input 
-                          type="text" 
-                          inputMode="decimal"
-                          className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
-                          value={c.roomRate || ''} 
-                          onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} 
-                          placeholder="Optional"
-                        />
-                      </div>
+                      <div className="relative"><span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span><input type="text" inputMode="decimal" className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" value={c.roomRate || ''} onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} placeholder="Optional" /></div>
                     </div>
                   )}
                 </div>
-                {coverages.length > 1 && (
-                  <button 
-                    type="button" 
-                    onClick={() => removeCoverage(idx)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                  >
-                    ✕
-                  </button>
-                )}
+                {coverages.length > 1 && <button type="button" onClick={() => removeCoverage(idx)} className="absolute -top-2 -right-2 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">✕</button>}
               </div>
             ))}
           </div>
         </div>
-
         <div className="flex justify-end space-x-3 mt-6">
           <button type="button" onClick={onCancel} className="px-6 py-2.5 text-sm font-bold text-slate-500">{t.cancel}</button>
           <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-blue-700 transition-colors">{t.save}</button>

@@ -55,6 +55,26 @@ export interface Policy {
   documents?: PolicyDocument[];
 }
 
+export interface TaxDeductions {
+  socialSecurity: number;
+  homeLoanInterest: number;
+  ssf: number;
+  rmf: number;
+  pvd: number; // Provident Fund / GPF
+  thaiEsg: number;
+  fatherCare: boolean; // 30,000 THB
+  motherCare: boolean; // 30,000 THB
+  parentHealthInsurance: number; // Max 15,000 THB
+  childAllowance: number; // 30,000 per child
+  spouseDeduction: boolean; // 60,000 THB (Only if spouse has no income)
+  disabledCareCount: number; // 60,000 per person
+  prenatalExpenses: number; // Actual max 60,000
+  donations: number;
+  donationsEducation: number; // 2x actual
+  otherDeductions: number;
+  taxWithheld: number; // ภาษีที่ชำระไว้แล้วหรือโดนหัก ณ ที่จ่าย
+}
+
 export interface UserProfile {
   name: string;
   sex: 'Male' | 'Female' | 'Other';
@@ -65,11 +85,9 @@ export interface UserProfile {
   monthlyExpenses: number;
   totalDebt: number;
   familyNotes?: string;
+  taxDeductions?: TaxDeductions;
 }
 
-/**
- * Added missing GapAnalysisResult interface for AI analysis output
- */
 export interface GapAnalysisResult {
   score: number;
   gaps: {

@@ -68,13 +68,37 @@ export const analyzeTaxOptimization = async (policies: Policy[], profile: UserPr
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const policySummary = policies.map(p => `Plan: ${p.planName}, Premium: ฿${p.premiumAmount.toLocaleString()}, Types: ${p.coverages.map(c => c.type).join(", ")}`).join("; ");
 
+  const deductions = profile.taxDeductions || {};
+  const deductionSummary = Object.entries(deductions)
+    .map(([key, value]) => `${key}: ${typeof value === 'boolean' ? (value ? 'Yes' : 'No') : '฿' + (value as number).toLocaleString()}`)
+    .join(", ");
+
   const prompt = `
     Act as a Thai Tax Planning Expert. 
-    Income: ฿${profile.annualIncome.toLocaleString()}
-    Policies: ${policySummary || "No existing policies."}
-    Calculate tax optimization based on Thai Revenue rules.
+    Annual Income: ฿${profile.annualIncome.toLocaleString()}
+    Existing Policies: ${policySummary || "No existing policies."}
+    Other Deductions (SSF, RMF, PVD, ThaiESG, Parent Health, Parent Care, Spouse, Child, Disabled, etc.): ${deductionSummary}
+    
+    Calculate tax optimization based on Thai Revenue Department rules for personal income tax (2025 onwards).
+    - Personal Deduction: ฿60,000
+    - Expense Deduction: 50% max ฿100,000
+    - Life & Health: ฿100,000 (Health insurance cap ฿25,000 within this)
+    - Pension: ฿200,000 (max 15% income)
+    - Parent Health Insurance: ฿15,000 (for both parents combined)
+    - Combined Group Limit (SSF + RMF + PVD + PensionInsurance): ฿500,000
+    - ThaiESG Separate Limit: ฿300,000 (max 30% income) - This is separate from the ฿500,000 group.
+    
+    IMPORTANT BRAND RULE: 
+    When suggesting insurance products to optimize tax, ONLY recommend FWD Thailand products sold via the AGENT channel.
+    Examples of products to recommend:
+    - Health: FWD Precious Care, FWD CI Pro, FWD CI Fixed Pay
+    - Life: FWD Power Life, FWD Precious Whole Life
+    - Pension: FWD For Pension 85/1, 85/5
+    - Savings: FWD Power Save 12/6, FWD Power Save 15/5
+    Do NOT suggest products from other companies.
+
     Output Language: ${lang === 'th' ? 'Thai' : 'English'}
-    Return JSON: advice (array), suggestedProducts (array), estimatedTotalBenefit (number).
+    Return JSON: advice (array of strings), suggestedProducts (array of strings), estimatedTotalBenefit (number).
   `;
 
   try {
@@ -96,36 +120,15 @@ export const analyzeTaxOptimization = async (policies: Policy[], profile: UserPr
     });
     return JSON.parse(response.text.trim());
   } catch (error) {
+    console.error("AI Tax Analysis failed", error);
     return { advice: [], suggestedProducts: [], estimatedTotalBenefit: 0 };
   }
 };
 
 export const parsePolicyDocument = async (base64Data: string, mimeType: string): Promise<Partial<Policy> | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  const systemInstruction = `
-    You are a professional Thai Insurance Administrator and Document Auditor. 
-    Your mission is to extract structured data from Thai insurance policies (PDF/Images).
-
-    MAPPING RULES FOR 'type' (MUST MAP TO THESE EXACT STRINGS):
-    - 'Life Insurance': Look for ทุนประกันชีวิต, คุ้มครองกรณีเสียชีวิต, ทุนเริ่มต้น, มรดก.
-    - 'Health Insurance': Look for ค่ารักษาพยาบาล, ค่าแพทย์, เหมาจ่าย, OPD, IPD, คุ้มครองสุขภาพ.
-    - 'Personal Accident': Look for อุบัติเหตุ, อบ.1, อบ.2, ค่าชดเชยอุบัติเหตุ, PA.
-    - 'Critical Illness': Look for โรคร้ายแรง, กลุ่มโรค, คุ้มครอง 40-50 โรค, มะเร็ง, หัวใจ.
-    - 'Savings/Endowment': Look for สะสมทรัพย์, มีเงินคืนรายปี, ครบกำหนดสัญญา, ประกันออมทรัพย์.
-    - 'Pension/Retirement': Look for บำนาญ, ประกันเกษียณอายุ, เงินคืนหลังอายุ 55/60.
-    - 'Hospital Benefit': Look for ค่าชดเชยรายวัน, เงินชดเชยนอนโรงพยาบาล, HB, HS.
-
-    EXTRACTION DETAILS:
-    1. 'company': Standard English name (e.g., FWD, AIA, Muang Thai).
-    2. 'planName': The full plan name as shown in the policy.
-    3. 'premiumAmount': Total premium to pay (Numeric only).
-    4. 'roomRate': If you find "ค่าห้อง" or "Daily Room Rate" under health, put numeric value here.
-    5. 'dueDate': Convert Thai Buddhist Year (e.g. 2568) to CE Year (2025). Format: YYYY-MM-DD.
-  `;
-
-  const prompt = `Carefully extract data from this policy document. Prioritize accuracy in identifying the Coverage Type based on Thai terminology.`;
-
+  const systemInstruction = `Extract insurance data from Thai policies. Map to: Life Insurance, Health Insurance, Personal Accident, Critical Illness, Savings/Endowment, Pension/Retirement, Hospital Benefit. Convert Thai years to CE.`;
+  const prompt = `Extract policy info from this image.`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -145,24 +148,13 @@ export const parsePolicyDocument = async (base64Data: string, mimeType: string):
             planName: { type: Type.STRING },
             premiumAmount: { type: Type.NUMBER },
             frequency: { type: Type.STRING, enum: ["Monthly", "Quarterly", "Yearly"] },
-            dueDate: { type: Type.STRING, description: "Format: YYYY-MM-DD" },
+            dueDate: { type: Type.STRING },
             coverages: { 
               type: Type.ARRAY, 
               items: { 
                 type: Type.OBJECT, 
                 properties: { 
-                  type: { 
-                    type: Type.STRING, 
-                    enum: [
-                      "Life Insurance", 
-                      "Health Insurance", 
-                      "Personal Accident", 
-                      "Critical Illness", 
-                      "Savings/Endowment", 
-                      "Pension/Retirement", 
-                      "Hospital Benefit"
-                    ] 
-                  }, 
+                  type: { type: Type.STRING }, 
                   sumAssured: { type: Type.NUMBER }, 
                   roomRate: { type: Type.NUMBER, nullable: true } 
                 },
@@ -176,48 +168,19 @@ export const parsePolicyDocument = async (base64Data: string, mimeType: string):
     });
     return JSON.parse(response.text.trim());
   } catch (err) {
-    console.error("AI Extraction Error:", err);
     return null;
   }
 };
 
-/**
- * AI Underwriting Evaluation
- */
 export const performPreUnderwriting = async (
   medicalHistory: string, 
   files: { data: string, mimeType: string }[], 
   lang: Language
 ): Promise<UnderwritingResult | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-  const prompt = `
-    Act as an experienced Medical Underwriter for a major Thai insurance company.
-    Evaluate the following medical history and attached records for insurance approval risk.
-    
-    CRITICAL: YOU MUST RESPOND ENTIRELY IN THE REQUESTED LANGUAGE: ${lang === 'th' ? 'THAI' : 'ENGLISH'}.
-    Do not mix languages. If the user input is in Thai, respond in Thai.
-
-    Medical History Provided:
-    "${medicalHistory}"
-
-    Rules:
-    - Risk Levels: Standard (Normal), Sub-standard (Loading premium/Exclusion), Postpone (Wait for more records/time), Decline (Reject).
-    - Provide reasoning based on medical risk factors and insurance industry standards.
-    - If medical records are attached, prioritize findings in the reports.
-
-    Return JSON:
-    - riskLevel: enum ["Standard", "Sub-standard", "Postpone", "Decline"]
-    - assessment: string (Detailed assessment summary in ${lang === 'th' ? 'THAI' : 'ENGLISH'})
-    - reasons: array of strings (Analysis points in ${lang === 'th' ? 'THAI' : 'ENGLISH'})
-    - additionalRequirements: array of strings (Specific documents or exams needed in ${lang === 'th' ? 'THAI' : 'ENGLISH'})
-  `;
-
-  const parts: any[] = [{ text: prompt }];
-  files.forEach(f => {
-    parts.push({ inlineData: { data: f.data.split(',')[1], mimeType: f.mimeType } });
-  });
-
+  const prompt = `Act as Medical Underwriter. Assessment in ${lang === 'th' ? 'Thai' : 'English'}. Risk levels: Standard, Sub-standard, Postpone, Decline.`;
+  const parts: any[] = [{ text: medicalHistory + prompt }];
+  files.forEach(f => parts.push({ inlineData: { data: f.data.split(',')[1], mimeType: f.mimeType } }));
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -238,7 +201,6 @@ export const performPreUnderwriting = async (
     });
     return JSON.parse(response.text.trim());
   } catch (err) {
-    console.error("AI Underwriting failed", err);
     return null;
   }
 };

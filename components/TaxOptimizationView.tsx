@@ -35,7 +35,6 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
       if (p.frequency === PaymentFrequency.QUARTERLY) annualPremium *= 4;
 
       const hasPension = p.coverages.some(c => c.type === CoverageType.PENSION);
-      // Health/Life bucket (100k cap)
       const hasLifeHealth = p.coverages.some(c => 
         c.type === CoverageType.LIFE || 
         c.type === CoverageType.HEALTH || 
@@ -51,43 +50,85 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
     });
 
     const lifeHealthUsed = Math.min(lifeHealthSum, 100000);
-    
-    // STRICT PENSION LOGIC: Lesser of 200,000 OR 15% of Annual Income
     const pensionCapByPercent = profile.annualIncome * 0.15;
     const pensionMaxLimit = Math.min(200000, pensionCapByPercent);
     const pensionUsed = Math.min(pensionSum, pensionMaxLimit);
 
+    const standardPersonal = 60000;
+    const standardExpense = Math.min(profile.annualIncome * 0.5, 100000);
+    const ded = profile.taxDeductions;
+    const spouseSum = ded?.spouseDeduction ? 60000 : 0;
+    const parentCareSum = (ded?.fatherCare ? 30000 : 0) + (ded?.motherCare ? 30000 : 0);
+    const parentHealthSum = Math.min(ded?.parentHealthInsurance || 0, 15000);
+    const childSum = (ded?.childAllowance || 0) * 30000;
+    const disabledSum = (ded?.disabledCareCount || 0) * 60000;
+    const prenatalSum = Math.min(ded?.prenatalExpenses || 0, 60000);
+    const investmentSumRaw = (ded?.ssf || 0) + (ded?.rmf || 0) + (ded?.pvd || 0) + pensionUsed;
+    const investmentCombinedUsed = Math.min(investmentSumRaw, 500000);
+    const thaiEsgCap = Math.min(profile.annualIncome * 0.3, 300000);
+    const thaiEsgUsed = Math.min(ded?.thaiEsg || 0, thaiEsgCap);
+    const otherManualSum = (ded?.socialSecurity || 0) + 
+                           (ded?.homeLoanInterest || 0) + 
+                           (ded?.donations || 0) + 
+                           ((ded?.donationsEducation || 0) * 2) +
+                           (ded?.otherDeductions || 0);
+
+    const totalInsuranceDeduction = lifeHealthUsed + pensionUsed + parentHealthSum;
+    const totalDeductionCombined = standardPersonal + standardExpense + spouseSum + parentCareSum + parentHealthSum + childSum + disabledSum + prenatalSum + investmentCombinedUsed + thaiEsgUsed + otherManualSum;
+
     const calculateBracket = (income: number) => {
-      if (income <= 150000) return 0;
-      if (income <= 300000) return 5;
-      if (income <= 500000) return 10;
-      if (income <= 750000) return 15;
-      if (income <= 1000000) return 20;
-      if (income <= 2000000) return 25;
-      if (income <= 5000000) return 30;
+      const taxableIncome = Math.max(0, income - totalDeductionCombined);
+      if (taxableIncome <= 150000) return 0;
+      if (taxableIncome <= 300000) return 5;
+      if (taxableIncome <= 500000) return 10;
+      if (taxableIncome <= 750000) return 15;
+      if (taxableIncome <= 1000000) return 20;
+      if (taxableIncome <= 2000000) return 25;
+      if (taxableIncome <= 5000000) return 30;
       return 35;
     };
 
     const bracket = calculateBracket(profile.annualIncome);
-    const totalDeduction = lifeHealthUsed + pensionUsed;
-    const estSavings = totalDeduction * (bracket / 100);
+    const taxableIncome = Math.max(0, profile.annualIncome - totalDeductionCombined);
+    let totalTaxLiability = 0;
+    if (taxableIncome > 150000) {
+      if (taxableIncome <= 300000) totalTaxLiability = (taxableIncome - 150000) * 0.05;
+      else if (taxableIncome <= 500000) totalTaxLiability = 7500 + (taxableIncome - 300000) * 0.10;
+      else if (taxableIncome <= 750000) totalTaxLiability = 27500 + (taxableIncome - 500000) * 0.15;
+      else if (taxableIncome <= 1000000) totalTaxLiability = 65000 + (taxableIncome - 750000) * 0.20;
+      else if (taxableIncome <= 2000000) totalTaxLiability = 115000 + (taxableIncome - 1000000) * 0.25;
+      else if (taxableIncome <= 5000000) totalTaxLiability = 365000 + (taxableIncome - 2000000) * 0.30;
+      else totalTaxLiability = 1265000 + (taxableIncome - 5000000) * 0.35;
+    }
+
+    const taxWithheld = ded?.taxWithheld || 0;
+    const netTaxResult = taxWithheld - totalTaxLiability;
 
     return {
       lifeHealthUsed,
       pensionUsed,
       pensionMaxLimit,
-      pensionCapByPercent,
       bracket,
-      estSavings,
-      totalDeduction
+      totalInsuranceDeduction,
+      totalDeductionCombined,
+      standardPersonal,
+      standardExpense,
+      parentCareSum,
+      parentHealthSum,
+      childSum,
+      spouseSum,
+      disabledSum,
+      prenatalSum,
+      investmentCombinedUsed,
+      thaiEsgUsed,
+      totalTaxLiability,
+      taxWithheld,
+      netTaxResult
     };
   }, [activePolicies, profile]);
 
   const handleRunAiTax = async () => {
-    if (!isPro) {
-      setShowUpgradeModal(true);
-      return;
-    }
+    if (!isPro) { setShowUpgradeModal(true); return; }
     setLoading(true);
     try {
       const result = await analyzeTaxOptimization(activePolicies, profile, lang);
@@ -99,12 +140,8 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
     }
   };
 
-  const handleConsultExpert = () => {
-    window.open('https://line.me/ti/p/@patrickfwd', '_blank');
-  };
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
           <div>
@@ -115,16 +152,9 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
             onClick={handleRunAiTax}
             disabled={loading}
             className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 
-              ${!isPro 
-                ? 'bg-slate-800 hover:bg-slate-900 text-slate-300 shadow-slate-200' 
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'}`}
+              ${!isPro ? 'bg-slate-800 text-slate-300' : 'bg-indigo-600 text-white'}`}
           >
             {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
-            {!isPro && !loading && (
-              <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            )}
             {t.optimizeNow}
           </button>
         </div>
@@ -134,165 +164,104 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
             <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2">{t.lifeDeduction}</p>
             <h4 className="text-2xl font-black text-slate-900">฿{taxMetrics.lifeHealthUsed.toLocaleString()}</h4>
             <div className="mt-3 flex items-center justify-between text-[10px] text-blue-400 font-bold uppercase">
-              <span>Limit: ฿100,000</span>
+              <span>{t.maxLimit}: ฿100,000</span>
               <span>{Math.round((taxMetrics.lifeHealthUsed / 100000) * 100)}%</span>
             </div>
             <div className="w-full h-1.5 bg-blue-100 rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${(taxMetrics.lifeHealthUsed / 100000) * 100}%` }}></div>
+              <div className="h-full bg-blue-500" style={{ width: `${(taxMetrics.lifeHealthUsed / 100000) * 100}%` }}></div>
             </div>
           </div>
 
-          <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100/50 relative group">
+          <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100/50">
             <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">{t.pensionDeduction}</p>
             <h4 className="text-2xl font-black text-slate-900">฿{taxMetrics.pensionUsed.toLocaleString()}</h4>
-            
-            <div className="mt-3 flex flex-col space-y-1">
-              <div className="flex items-center justify-between text-[10px] text-indigo-400 font-bold uppercase">
-                <span className="flex items-center">
-                  Limit: ฿{taxMetrics.pensionMaxLimit.toLocaleString()}
-                  <span className="ml-1 text-[8px] opacity-70 cursor-help" title={`Lesser of 15% Income (฿${taxMetrics.pensionCapByPercent.toLocaleString()}) or 200,000`}>ℹ️</span>
-                </span>
-                <span>{Math.round((taxMetrics.pensionUsed / taxMetrics.pensionMaxLimit) * 100)}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-indigo-100 rounded-full mt-1 overflow-hidden">
-                <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${(taxMetrics.pensionUsed / taxMetrics.pensionMaxLimit) * 100}%` }}></div>
-              </div>
-              <p className="text-[8px] text-indigo-300 font-bold uppercase mt-1 tracking-tighter">
-                {taxMetrics.pensionCapByPercent < 200000 
-                  ? `*Limited by 15% of income (฿${taxMetrics.pensionCapByPercent.toLocaleString()})` 
-                  : `*Capped at max ฿200,000 limit`}
-              </p>
+            <div className="mt-3 flex items-center justify-between text-[10px] text-indigo-400 font-bold uppercase">
+              <span>{t.maxLimit}: ฿{taxMetrics.pensionMaxLimit.toLocaleString()}</span>
+              <span>{Math.round((taxMetrics.pensionUsed / (taxMetrics.pensionMaxLimit || 1)) * 100)}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-indigo-100 rounded-full mt-2 overflow-hidden">
+              <div className="h-full bg-indigo-500" style={{ width: `${(taxMetrics.pensionUsed / (taxMetrics.pensionMaxLimit || 1)) * 100}%` }}></div>
             </div>
           </div>
 
-          <div className="p-6 bg-slate-900 rounded-3xl text-white shadow-xl lg:col-span-2 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.taxSavings}</p>
-                <h4 className="text-4xl font-black text-emerald-400">฿{taxMetrics.estSavings.toLocaleString()}</h4>
-                <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase tracking-widest">Total Deduction Applied: ฿{taxMetrics.totalDeduction.toLocaleString()}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.taxBracket}</p>
-                <span className="text-xl font-bold px-3 py-1 bg-white/10 rounded-xl">{taxMetrics.bracket}%</span>
-              </div>
+          <div className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t.totalTaxDeduction}</p>
+            <h4 className="text-2xl font-black text-slate-900">฿{taxMetrics.totalDeductionCombined.toLocaleString()}</h4>
+            <div className="mt-3 grid grid-cols-2 gap-x-2 gap-y-1">
+               <p className="text-[8px] text-slate-400 font-bold uppercase">{t.taxPersonal}: ฿{taxMetrics.standardPersonal.toLocaleString()}</p>
+               <p className="text-[8px] text-slate-400 font-bold uppercase">{t.taxExpense}: ฿{taxMetrics.standardExpense.toLocaleString()}</p>
+               <p className="text-[8px] text-slate-400 font-bold uppercase">{t.taxFamily}: ฿{(taxMetrics.parentCareSum + taxMetrics.childSum + taxMetrics.spouseSum + taxMetrics.disabledSum).toLocaleString()}</p>
+               <p className="text-[8px] text-slate-400 font-bold uppercase">{t.taxInvest}: ฿{(taxMetrics.investmentCombinedUsed + taxMetrics.thaiEsgUsed).toLocaleString()}</p>
             </div>
-            <p className="text-[10px] text-slate-500 mt-4 leading-relaxed italic">{t.thaiTaxNotice}</p>
+          </div>
+
+          <div className={`p-6 rounded-3xl text-white shadow-xl flex flex-col justify-between transition-colors ${taxMetrics.netTaxResult >= 0 ? 'bg-emerald-600' : 'bg-slate-900'}`}>
+            <div>
+              <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">
+                {taxMetrics.netTaxResult >= 0 ? t.taxRefund : t.taxPayable}
+              </p>
+              <h4 className="text-3xl font-black text-white">฿{Math.abs(taxMetrics.netTaxResult).toLocaleString()}</h4>
+              <p className="text-[9px] text-white/50 mt-2 italic">
+                {t.taxWithheld}: ฿{taxMetrics.taxWithheld.toLocaleString()}
+              </p>
+            </div>
+            <div className="flex justify-between items-center mt-4">
+               <span className="text-[10px] font-bold text-white/40 uppercase">{t.taxBracket}</span>
+               <span className="text-xl font-bold">{taxMetrics.bracket}%</span>
+            </div>
           </div>
         </div>
 
         {aiResult && isPro && (
           <div className="mt-12 space-y-8 animate-in slide-in-from-bottom-4 duration-700">
-            <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
-              <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-xl shadow-lg shadow-indigo-200 text-white">🤖</div>
-              <h5 className="font-black text-slate-800 uppercase tracking-widest">AI Optimization Strategy</h5>
+            <div className="flex items-center space-x-4 border-b border-slate-100 pb-4">
+              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-2xl text-white shadow-lg shadow-indigo-100">🤖</div>
+              <div>
+                <h5 className="font-black text-slate-800 uppercase tracking-widest text-lg">{t.aiTaxStrategy}</h5>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{t.optimizedFor2025}</p>
+              </div>
             </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-4">
-                <h6 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">{t.recommendations}</h6>
+                <h6 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full"></span> {t.recommendations}
+                </h6>
                 {aiResult.advice.map((adv, i) => (
-                  <div key={i} className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-start group hover:border-indigo-200 transition-all">
-                    <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 mr-4 font-bold text-xs">{i+1}</span>
-                    <p className="text-sm text-slate-700 leading-relaxed font-medium">{adv}</p>
+                  <div key={i} className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-start group hover:bg-white hover:shadow-xl transition-all">
+                    <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 mr-4 font-black text-xs">{i+1}</span>
+                    <p className="text-sm text-slate-700 leading-relaxed font-semibold">{adv}</p>
                   </div>
                 ))}
               </div>
-
               <div className="space-y-4">
-                <h6 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Suggested Solutions</h6>
-                <div className="grid grid-cols-1 gap-3">
+                <h6 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full"></span> {t.suggestedProducts}
+                </h6>
+                <div className="grid grid-cols-1 gap-4">
                   {aiResult.suggestedProducts.map((prod, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-lg">📈</div>
-                        <span className="text-sm font-bold text-slate-800">{prod}</span>
+                    <div key={i} className="flex items-center justify-between p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all group">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">📈</div>
+                        <span className="text-sm font-black text-slate-800 tracking-tight">{prod}</span>
                       </div>
-                      <button 
-                        onClick={handleConsultExpert}
-                        className="text-[10px] font-black uppercase text-indigo-600 tracking-widest hover:underline"
-                      >
-                        Ask Patrick
-                      </button>
+                      <button onClick={() => window.open('https://line.me/ti/p/@patrickfwd', '_blank')} className="px-4 py-1.5 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase rounded-lg hover:bg-indigo-600 hover:text-white transition-all">{t.askPatrick}</button>
                     </div>
                   ))}
-                  {aiResult.suggestedProducts.length === 0 && (
-                    <div className="p-8 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                      <p className="text-sm text-slate-400 font-medium">Your current portfolio covers all major tax saving categories!</p>
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
-
-            <div className="pt-10 flex flex-col items-center border-t border-slate-100 mt-8">
-              <h5 className="text-lg font-bold text-slate-800 mb-6">{t.consultExpert}</h5>
-              <button 
-                onClick={handleConsultExpert}
-                className="px-12 py-4 bg-[#00B900] hover:bg-[#009e00] text-white rounded-[2rem] font-black text-lg shadow-2xl shadow-green-200 transition-all flex items-center gap-4 active:scale-95 group"
-              >
-                <span className="text-3xl bg-white/20 p-2 rounded-full group-hover:rotate-12 transition-transform">🧔</span>
-                <span>{t.connectLine}</span>
-              </button>
             </div>
           </div>
         )}
       </div>
 
-      <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200">
-        <h5 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-6">Thai Personal Income Tax Brackets</h5>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-          {[
-            { range: '0-150k', rate: '0%' },
-            { range: '150-300k', rate: '5%' },
-            { range: '300-500k', rate: '10%' },
-            { range: '500-750k', rate: '15%' },
-            { range: '750k-1M', rate: '20%' },
-            { range: '1M-2M', rate: '25%' },
-            { range: '2M-5M', rate: '30%' },
-            { range: '5M+', rate: '35%' },
-          ].map((b, i) => (
-            <div key={i} className={`p-3 rounded-2xl text-center border transition-all ${taxMetrics.bracket === parseInt(b.rate) ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg scale-105' : 'bg-white text-slate-600 border-slate-100'}`}>
-              <p className="text-[10px] font-bold opacity-60 mb-1">{b.range}</p>
-              <p className="text-lg font-black">{b.rate}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* PRO UPGRADE MODAL */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowUpgradeModal(false)} />
-          <div className="relative bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-center">
-             <div className="p-10">
-                <div className="w-20 h-20 bg-indigo-100 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner">
-                  🔒
-                </div>
-                <h3 className="text-2xl font-black text-slate-800 mb-2">{t.proFeature}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed mb-8">
-                  {t.proDesc}
-                </p>
-                
-                <div className="space-y-3">
-                  <button 
-                    onClick={() => { setShowUpgradeModal(false); alert('Redirecting to upgrade page...'); }}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 transition-all active:scale-95"
-                  >
-                    {t.upgradeNow}
-                  </button>
-                  <button 
-                    onClick={() => setShowUpgradeModal(false)}
-                    className="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-2xl font-bold text-sm transition-colors"
-                  >
-                    {t.cancel}
-                  </button>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-slate-100">
-                  <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Powered by Google Gemini 3 Pro</p>
-                </div>
-             </div>
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setShowUpgradeModal(false)} />
+          <div className="relative bg-white w-full max-w-md rounded-[3rem] p-10 text-center">
+            <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mb-6">🔒</div>
+            <h3 className="text-2xl font-black text-slate-800 mb-2">{t.proFeature}</h3>
+            <p className="text-slate-500 text-sm mb-8 leading-relaxed">{t.proDesc}</p>
+            <button onClick={() => setShowUpgradeModal(false)} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 active:scale-95 transition-all">{t.upgradeNow}</button>
           </div>
         </div>
       )}

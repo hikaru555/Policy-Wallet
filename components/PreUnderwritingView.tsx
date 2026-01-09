@@ -33,7 +33,6 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -58,7 +57,6 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
       alert(lang === 'en' ? "Please describe your medical history." : "กรุณาระบุประวัติสุขภาพของคุณ");
       return;
     }
-
     setIsAnalyzing(true);
     setResult(null);
     try {
@@ -149,15 +147,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                   + {lang === 'en' ? 'Add Files' : 'เพิ่มไฟล์'}
                 </button>
               </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                className="hidden" 
-                multiple 
-                accept="image/*,application/pdf"
-              />
-              
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple accept="image/*,application/pdf" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {attachedFiles.map((file, i) => (
                   <div key={i} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm group">
@@ -168,11 +158,6 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                     <button onClick={() => removeFile(i)} className="text-slate-300 hover:text-rose-500 p-1 transition-colors">✕</button>
                   </div>
                 ))}
-                {attachedFiles.length === 0 && (
-                  <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-100 rounded-3xl text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50/30">
-                    {lang === 'en' ? 'No records attached' : 'ไม่มีเอกสารแนบ'}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -183,7 +168,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                 className="w-full md:w-fit px-12 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
               >
                 {isAnalyzing && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
-                {isAnalyzing ? (lang === 'en' ? 'Evaluating Risk...' : 'กำลังประเมินความเสี่ยง...') : t.runUnderwriting}
+                {isAnalyzing ? t.evaluatingRisk : t.runUnderwriting}
               </button>
             </div>
           </div>
@@ -195,18 +180,9 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                 <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">{t.medicalHistoryGuidelineTitle}</h4>
               </div>
               <ul className="space-y-4">
-                <li className="flex gap-3 items-start">
-                  <span className="text-indigo-400 mt-1">✨</span>
-                  <p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline1}</p>
-                </li>
-                <li className="flex gap-3 items-start">
-                  <span className="text-indigo-400 mt-1">✨</span>
-                  <p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline2}</p>
-                </li>
-                <li className="flex gap-3 items-start">
-                  <span className="text-indigo-400 mt-1">✨</span>
-                  <p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline3}</p>
-                </li>
+                <li className="flex gap-3 items-start"><span className="text-indigo-400 mt-1">✨</span><p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline1}</p></li>
+                <li className="flex gap-3 items-start"><span className="text-indigo-400 mt-1">✨</span><p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline2}</p></li>
+                <li className="flex gap-3 items-start"><span className="text-indigo-400 mt-1">✨</span><p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline3}</p></li>
               </ul>
             </div>
           </div>
@@ -262,9 +238,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                       <div className="space-y-3">
                         {result.additionalRequirements.map((req, i) => (
                           <div key={i} className="flex items-center space-x-4 p-5 bg-amber-50/50 border border-amber-100 rounded-2xl">
-                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                              <span className="text-amber-500 text-lg">📎</span>
-                            </div>
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm"><span className="text-amber-500 text-lg">📎</span></div>
                             <p className="text-sm text-amber-900 font-bold">{req}</p>
                           </div>
                         ))}
@@ -277,15 +251,10 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                       <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-2xl flex-shrink-0">🧔</div>
                       <div className="text-left">
                         <h4 className="font-black text-slate-800 tracking-tight text-sm">{t.underwritingConsult}</h4>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-tight mt-0.5">
-                          {t.underwritingConsultDesc}
-                        </p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-tight mt-0.5">{t.underwritingConsultDesc}</p>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => window.open('https://line.me/ti/p/@patrickfwd', '_blank')}
-                      className="w-full py-3.5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-2xl font-black text-xs shadow-lg shadow-green-100/50 transition-all active:scale-[0.98] flex items-center justify-center gap-2.5"
-                    >
+                    <button onClick={() => window.open('https://line.me/ti/p/@patrickfwd', '_blank')} className="w-full py-3.5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-2xl font-black text-xs shadow-lg shadow-green-100/50 transition-all active:scale-[0.98] flex items-center justify-center gap-2.5">
                       <span>{t.connectLine}</span>
                     </button>
                   </div>
@@ -296,7 +265,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
         ) : (
           <div className="bg-white p-16 rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center opacity-40">
             <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-5xl mb-8 animate-pulse shadow-inner">🤖</div>
-            <p className="text-base font-black text-slate-900 uppercase tracking-widest mb-3">{lang === 'en' ? 'Awaiting Medical Context' : 'รอข้อมูลประวัติสุขภาพ'}</p>
+            <p className="text-base font-black text-slate-900 uppercase tracking-widest mb-3">{t.awaitingMedicalContext}</p>
             <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-[320px]">
               {lang === 'en' ? 'Describe your health history and upload any available records to receive your AI underwriting risk assessment.' : 'ระบุประวัติสุขภาพของคุณและอัปโหลดเอกสารที่มีเพื่อให้ AI ประเมินความเสี่ยงในการรับประกัน'}
             </p>
@@ -308,9 +277,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
         <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-2xl flex-shrink-0">🛡️</div>
         <div>
           <h4 className="font-black text-blue-900 text-sm mb-1 uppercase tracking-tight">{t.underwritingDisclaimerTitle}</h4>
-          <p className="text-blue-800 text-xs leading-relaxed font-medium opacity-70">
-            {t.underwritingDisclaimerBody}
-          </p>
+          <p className="text-blue-800 text-xs leading-relaxed font-medium opacity-70">{t.underwritingDisclaimerBody}</p>
         </div>
       </div>
     </div>
