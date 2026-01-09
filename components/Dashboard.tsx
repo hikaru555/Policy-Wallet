@@ -13,19 +13,21 @@ interface DashboardProps {
 const getCoverageColor = (type: string): string => {
   switch (type) {
     case CoverageType.LIFE:
-    case CoverageType.SAVINGS:
-    case CoverageType.PENSION:
-      return '#2563eb';
-    case CoverageType.HOSPITAL_BENEFIT:
-      return '#ec4899';
+      return '#3b82f6'; // Bright Blue
     case CoverageType.HEALTH:
-      return '#059669';
+      return '#10b981'; // Emerald Green
     case CoverageType.ACCIDENT:
-      return '#f59e0b';
+      return '#f97316'; // Deep Orange
     case CoverageType.CRITICAL:
-      return '#f43f5e';
+      return '#ef4444'; // Bright Red
+    case CoverageType.SAVINGS:
+      return '#8b5cf6'; // Violet
+    case CoverageType.PENSION:
+      return '#6366f1'; // Indigo
+    case CoverageType.HOSPITAL_BENEFIT:
+      return '#ec4899'; // Pink
     default:
-      return '#64748b';
+      return '#64748b'; // Slate
   }
 };
 
@@ -174,17 +176,17 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                 </ResponsiveContainer>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-50">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 mt-4 pt-4 border-t border-slate-50">
                 {chartData.map((entry, index) => (
                   <div key={entry.name} className="flex items-start space-x-2.5">
                     <div 
-                      className="w-3.5 h-3.5 rounded-full flex-shrink-0 mt-0.5" 
+                      className="w-3.5 h-3.5 rounded-full flex-shrink-0 mt-0.5 shadow-sm" 
                       style={{ backgroundColor: entry.color }} 
                     />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold text-slate-700 truncate">{entry.name}</span>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        {((entry.value / (totalSumAssured || 1)) * 100).toFixed(1)}%
+                      <span className="text-xs font-bold text-slate-700 truncate leading-tight">{entry.name}</span>
+                      <span className="text-[11px] text-slate-400 font-medium mt-0.5">
+                        {((entry.value / (chartData.reduce((sum, item) => sum + item.value, 0) || 1)) * 100).toFixed(1)}%
                       </span>
                     </div>
                   </div>

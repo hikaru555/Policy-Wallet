@@ -1,8 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
-import { Policy, UserProfile, CoverageType, PaymentFrequency, calculatePolicyStatus } from '../types';
+import { Policy, UserProfile, CoverageType, PaymentFrequency, calculatePolicyStatus, UsageStats } from '../types';
 import { translations, Language } from '../translations';
 import { analyzeTaxOptimization } from '../services/geminiService';
+import { storageManager } from '../services/storageManager';
 
 interface TaxOptimizationViewProps {
   policies: Policy[];
@@ -15,11 +16,15 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
   const t = translations[lang];
   const [loading, setLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [usage, setUsage] = useState<UsageStats>(storageManager.getAiUsage());
   const [aiResult, setAiResult] = useState<{
     advice: string[];
     suggestedProducts: string[];
     estimatedTotalBenefit: number;
   } | null>(null);
+
+  const MAX_AI_USAGE = 10;
+  const remaining = isPro ? Infinity : Math.max(0, MAX_AI_USAGE - usage.count);
 
   const activePolicies = useMemo(() => 
     policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated'),
@@ -128,11 +133,18 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
   }, [activePolicies, profile]);
 
   const handleRunAiTax = async () => {
-    if (!isPro) { setShowUpgradeModal(true); return; }
+    if (!isPro && remaining <= 0) { 
+      setShowUpgradeModal(true); 
+      return; 
+    }
     setLoading(true);
     try {
       const result = await analyzeTaxOptimization(activePolicies, profile, lang);
       setAiResult(result);
+      if (!isPro) {
+        storageManager.incrementAiUsage();
+        setUsage(storageManager.getAiUsage());
+      }
     } catch (e) {
       alert("Analysis failed");
     } finally {
@@ -148,15 +160,24 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
             <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.taxTitle}</h3>
             <p className="text-slate-500 text-sm mt-1">{t.taxSubtitle}</p>
           </div>
-          <button 
-            onClick={handleRunAiTax}
-            disabled={loading}
-            className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 
-              ${!isPro ? 'bg-slate-800 text-slate-300' : 'bg-indigo-600 text-white'}`}
-          >
-            {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
-            {t.optimizeNow}
-          </button>
+          <div className="flex flex-col items-end gap-3">
+            <button 
+              onClick={handleRunAiTax}
+              disabled={loading || (!isPro && remaining <= 0)}
+              className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 
+                ${(!isPro && remaining <= 0) ? 'bg-slate-800 text-slate-300' : 'bg-indigo-600 text-white'}`}
+            >
+              {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+              {t.optimizeNow}
+            </button>
+            
+            <div className="px-3 py-1 bg-slate-50 rounded-lg border border-slate-100">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest mr-2">{t.remainingUsage}:</span>
+              <span className={`text-[11px] font-black ${remaining > 0 ? 'text-indigo-600' : 'text-rose-500'}`}>
+                {isPro ? t.unlimited : `${remaining} / ${MAX_AI_USAGE}`}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -212,7 +233,7 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
           </div>
         </div>
 
-        {aiResult && isPro && (
+        {aiResult && (
           <div className="mt-12 space-y-8 animate-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center space-x-4 border-b border-slate-100 pb-4">
               <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-2xl text-white shadow-lg shadow-indigo-100">🤖</div>
@@ -259,7 +280,7 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setShowUpgradeModal(false)} />
           <div className="relative bg-white w-full max-w-md rounded-[3rem] p-10 text-center">
             <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mb-6">🔒</div>
-            <h3 className="text-2xl font-black text-slate-800 mb-2">{t.proFeature}</h3>
+            <h3 className="text-2xl font-black text-slate-800 mb-2">{t.limitReached}</h3>
             <p className="text-slate-500 text-sm mb-8 leading-relaxed">{t.proDesc}</p>
             <button onClick={() => setShowUpgradeModal(false)} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 active:scale-95 transition-all">{t.upgradeNow}</button>
           </div>

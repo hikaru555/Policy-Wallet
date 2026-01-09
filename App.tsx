@@ -295,7 +295,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} /> : <ProfileRequiredView />)}
+        {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} isPro={isPro} /> : <ProfileRequiredView />)}
         {activeTab === 'tax' && (profile ? <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} /> : <ProfileRequiredView />)}
         {activeTab === 'underwriting' && <PreUnderwritingView user={user} lang={lang} isPro={isPro} />}
         {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={setProfile} lang={lang} policies={policies} onImport={handleImportPortfolio} isPro={isPro} />}

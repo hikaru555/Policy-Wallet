@@ -11,7 +11,7 @@ export const STORAGE_KEYS = {
   SESSION: `${APP_PREFIX}session`,
   VERSION: `${APP_PREFIX}data_version`,
   USERS: `${APP_PREFIX}users`,
-  UNDERWRITING_USAGE: `${APP_PREFIX}underwriting_usage`
+  AI_USAGE: `${APP_PREFIX}ai_usage`
 };
 
 export const storageManager = {
@@ -48,24 +48,22 @@ export const storageManager = {
     }
   },
 
-  getUnderwritingUsage(): UsageStats {
+  getAiUsage(): UsageStats {
     const today = new Date().toISOString().split('T')[0];
-    // Fix: Solely rely on storageManager reference instead of "this" to satisfy TypeScript generic constraints in object literal
-    const saved = storageManager.load<UsageStats | null>(STORAGE_KEYS.UNDERWRITING_USAGE, null);
+    const saved = storageManager.load<UsageStats | null>(STORAGE_KEYS.AI_USAGE, null);
     
     if (!saved || saved.date !== today) {
       const reset = { date: today, count: 0 };
-      storageManager.save(STORAGE_KEYS.UNDERWRITING_USAGE, reset);
+      storageManager.save(STORAGE_KEYS.AI_USAGE, reset);
       return reset;
     }
     return saved;
   },
 
-  incrementUnderwritingUsage(): void {
-    // Fix: Solely rely on storageManager reference instead of "this"
-    const stats = storageManager.getUnderwritingUsage();
+  incrementAiUsage(): void {
+    const stats = storageManager.getAiUsage();
     stats.count += 1;
-    storageManager.save(STORAGE_KEYS.UNDERWRITING_USAGE, stats);
+    storageManager.save(STORAGE_KEYS.AI_USAGE, stats);
   },
 
   clearSession(): void {

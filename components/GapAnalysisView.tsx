@@ -1,22 +1,33 @@
 
 import React, { useState } from 'react';
-import { GapAnalysisResult, Policy, UserProfile, calculatePolicyStatus } from '../types';
+import { GapAnalysisResult, Policy, UserProfile, calculatePolicyStatus, UsageStats } from '../types';
 import { analyzeCoverageGaps } from '../services/geminiService';
 import { translations, Language } from '../translations';
+import { storageManager } from '../services/storageManager';
 
 interface GapAnalysisViewProps {
   policies: Policy[];
   profile: UserProfile;
   lang: Language;
   onAnalysisComplete?: (score: number) => void;
+  isPro: boolean;
 }
 
-const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, lang, onAnalysisComplete }) => {
+const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, lang, onAnalysisComplete, isPro }) => {
   const t = translations[lang];
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GapAnalysisResult | null>(null);
+  const [usage, setUsage] = useState<UsageStats>(storageManager.getAiUsage());
+
+  const MAX_AI_USAGE = 10;
+  const remaining = isPro ? Infinity : Math.max(0, MAX_AI_USAGE - usage.count);
 
   const handleRunAnalysis = async () => {
+    if (!isPro && remaining <= 0) {
+      alert(t.limitReached);
+      return;
+    }
+
     setLoading(true);
     const activePolicies = policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated');
     
@@ -25,6 +36,11 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
       setResult(res);
       if (onAnalysisComplete && res.score !== undefined) {
         onAnalysisComplete(res.score);
+      }
+      
+      if (!isPro) {
+        storageManager.incrementAiUsage();
+        setUsage(storageManager.getAiUsage());
       }
     } catch (e) {
       alert(lang === 'en' ? "Failed to run analysis." : "การวิเคราะห์ล้มเหลว โปรดลองอีกครั้ง");
@@ -57,14 +73,23 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
               : `วิเคราะห์พอร์ตอัจฉริยะตามข้อมูลของคุณและกรมธรรม์ที่มีผลคุ้มครอง ${activeCount} ฉบับ`}
           </p>
         </div>
-        <button
-          onClick={handleRunAnalysis}
-          disabled={loading}
-          className={`px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl transition-all font-bold text-sm shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50 flex items-center space-x-2`}
-        >
-          {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
-          <span>{loading ? (lang === 'en' ? 'Processing...' : 'กำลังวิเคราะห์...') : t.runAnalysis}</span>
-        </button>
+        <div className="flex flex-col items-end gap-3">
+          <button
+            onClick={handleRunAnalysis}
+            disabled={loading || (!isPro && remaining <= 0)}
+            className={`px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl transition-all font-bold text-sm shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50 flex items-center space-x-2`}
+          >
+            {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+            <span>{loading ? (lang === 'en' ? 'Processing...' : 'กำลังวิเคราะห์...') : t.runAnalysis}</span>
+          </button>
+          
+          <div className="px-3 py-1 bg-slate-50 rounded-lg border border-slate-100">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest mr-2">{t.remainingUsage}:</span>
+            <span className={`text-[11px] font-black ${remaining > 0 ? 'text-indigo-600' : 'text-rose-500'}`}>
+              {isPro ? t.unlimited : `${remaining} / ${MAX_AI_USAGE}`}
+            </span>
+          </div>
+        </div>
       </div>
 
       {!result && !loading && (
@@ -210,7 +235,7 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
               <span>{t.connectLine}</span>
             </button>
             <div className="mt-8 px-6 py-2 bg-slate-100 rounded-full text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] shadow-inner">
-              Powered by Gemini 3 Pro
+              Powered by Policy Wallet AI Core
             </div>
           </div>
         </div>
