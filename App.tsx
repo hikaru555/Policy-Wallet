@@ -17,6 +17,7 @@ import LoginView from './components/LoginView';
 import AdminConsole from './components/AdminConsole';
 import ProtectionIndex from './components/ProtectionIndex';
 import PreUnderwritingView from './components/PreUnderwritingView';
+import SharingView from './components/SharingView';
 import AppLogo from './components/AppLogo';
 import { storageManager, STORAGE_KEYS } from './services/storageManager';
 
@@ -37,7 +38,7 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(() => storageManager.load<UserProfile | null>(STORAGE_KEYS.PROFILE, null));
   const [protectionScore, setProtectionScore] = useState<number | null>(() => storageManager.load<number | null>(STORAGE_KEYS.SCORE, null));
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'underwriting' | 'vault' | 'profile' | 'admin'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'analysis' | 'tax' | 'underwriting' | 'vault' | 'sharing' | 'profile' | 'admin'>('overview');
   const [isAddingPolicy, setIsAddingPolicy] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
   const [viewingPolicy, setViewingPolicy] = useState<Policy | null>(null);
@@ -143,16 +144,16 @@ const App: React.FC = () => {
     <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200 text-center space-y-6">
       <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-5xl">👤</div>
       <div className="max-w-md space-y-2">
-        <h3 className="text-2xl font-black text-slate-800">{lang === 'en' ? 'Profile Information Required' : 'ต้องระบุข้อมูลส่วนตัว'}</h3>
-        <p className="text-slate-500 text-sm">
+        <h3 className="text-2xl font-black text-slate-800 tracking-tight">{lang === 'en' ? 'Profile Information Required' : 'ต้องระบุข้อมูลส่วนตัว'}</h3>
+        <p className="text-slate-500 text-sm font-medium">
           {lang === 'en' 
-            ? 'To provide accurate AI analysis and tax optimization, we need some basic financial information first.' 
+            ? 'To provide accurate AI analysis, sharing management and tax optimization, we need some basic financial information first.' 
             : 'เพื่อให้ AI สามารถวิเคราะห์ช่องว่างความคุ้มครองและวางแผนภาษีได้อย่างแม่นยำ โปรดระบุข้อมูลพื้นฐานทางการเงินของคุณก่อน'}
         </p>
       </div>
       <button 
         onClick={() => setActiveTab('profile')}
-        className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+        className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
       >
         {t.updateProfile}
       </button>
@@ -173,16 +174,16 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto">
-          {['overview', 'policies', 'analysis', 'tax', 'underwriting', 'profile', 'vault'].map(tabId => (
-            <button key={tabId} onClick={() => handleTabChange(tabId)} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === tabId ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
+          {['overview', 'policies', 'analysis', 'tax', 'underwriting', 'profile', 'vault', 'sharing'].map(tabId => (
+            <button key={tabId} onClick={() => handleTabChange(tabId)} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tabId ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
               <span className="text-lg">
-                {tabId === 'overview' ? '📊' : tabId === 'policies' ? '📄' : tabId === 'analysis' ? '🤖' : tabId === 'tax' ? '💰' : tabId === 'underwriting' ? '🩺' : tabId === 'profile' ? '👤' : '🛡️'}
+                {tabId === 'overview' ? '📊' : tabId === 'policies' ? '📄' : tabId === 'analysis' ? '🤖' : tabId === 'tax' ? '💰' : tabId === 'underwriting' ? '🩺' : tabId === 'profile' ? '👤' : tabId === 'vault' ? '🛡️' : '🔗'}
               </span>
               <span>{t[tabId as keyof typeof t] || tabId}</span>
             </button>
           ))}
           {user.role === 'Admin' && (
-            <button onClick={() => handleTabChange('admin')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeTab === 'admin' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
+            <button onClick={() => handleTabChange('admin')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'admin' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
               <span className="text-lg">⚙️</span><span>{t.admin}</span>
             </button>
           )}
@@ -204,8 +205,8 @@ const App: React.FC = () => {
           <div className="flex items-center space-x-3">
             <img src={user.picture} className="w-8 h-8 rounded-full border" alt="" />
             <div className="min-w-0">
-              <p className="text-[10px] font-bold text-slate-800 truncate">{user.name}</p>
-              <button onClick={handleLogout} className="text-[9px] font-bold text-red-500 hover:underline">{t.logout}</button>
+              <p className="text-[10px] font-bold text-slate-800 truncate leading-tight">{user.name}</p>
+              <button onClick={handleLogout} className="text-[9px] font-bold text-red-500 hover:underline uppercase tracking-tighter">{t.logout}</button>
             </div>
           </div>
         </div>
@@ -221,15 +222,15 @@ const App: React.FC = () => {
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
             </button>
             <div>
-              <h2 className="text-2xl font-black text-slate-900 capitalize tracking-tight">{t[activeTab as keyof typeof t] || activeTab}</h2>
-              <p className="text-slate-500 text-sm font-medium">{t.welcomeBack} <b className="text-slate-800">{user.name}</b></p>
+              <h2 className="text-2xl font-black text-slate-900 capitalize tracking-tight leading-tight">{t[activeTab as keyof typeof t] || activeTab}</h2>
+              <p className="text-slate-500 text-sm font-medium tracking-tight">{t.welcomeBack} <b className="text-slate-800">{user.name}</b></p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             {activeTab === 'overview' && policies.length > 0 && (
               <button 
                 onClick={() => setIsShareModalOpen(true)} 
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-bold shadow-sm active:scale-95 transition-colors hover:bg-slate-50"
+                className="px-5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all hover:bg-slate-50"
               >
                 {t.shareReport}
               </button>
@@ -237,7 +238,7 @@ const App: React.FC = () => {
             {(activeTab === 'overview' || activeTab === 'policies') && (
               <button 
                 onClick={toggleAddingPolicy} 
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-md active:scale-95 transition-all hover:bg-indigo-700"
+                className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-100 active:scale-95 transition-all hover:bg-indigo-700"
               >
                 {(isAddingPolicy || editingPolicy) ? t.cancel : `+ ${t.addPolicy}`}
               </button>
@@ -257,14 +258,14 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2"><PolicyList policies={policies} onDelete={handleDeletePolicy} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} /></div>
                   <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden flex flex-col items-center text-center">
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden flex flex-col items-center text-center">
                       <div className="mb-4">
                         <h5 className="font-black text-slate-900 text-lg leading-tight mb-1">{t.lineSync}</h5>
                         <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{lang === 'en' ? 'FWD Insurance Clinic' : 'คลินิกประกัน FWD'}</p>
                       </div>
                       <button 
                         onClick={handleConnectLine} 
-                        className="w-full py-3.5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-2xl font-black text-sm shadow-xl shadow-green-50 transition-all active:scale-95 flex items-center justify-center"
+                        className="w-full py-3.5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-green-50 transition-all active:scale-95 flex items-center justify-center"
                       >
                         {t.connectLine}
                       </button>
@@ -280,8 +281,8 @@ const App: React.FC = () => {
             ) : (
               <div className="text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
                 <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6"><span className="text-5xl">📁</span></div>
-                <h3 className="text-2xl font-black text-slate-800 mb-2">{lang === 'en' ? 'No policies found' : 'ไม่พบข้อมูลกรมธรรม์'}</h3>
-                <button onClick={toggleAddingPolicy} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 transition-all active:scale-95 hover:bg-indigo-700">+ {t.addPolicy}</button>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">{t.noPoliciesFound}</h3>
+                <button onClick={toggleAddingPolicy} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all active:scale-95 hover:bg-indigo-700">+ {t.addPolicy}</button>
               </div>
             )}
           </div>
@@ -299,6 +300,7 @@ const App: React.FC = () => {
         {activeTab === 'underwriting' && <PreUnderwritingView user={user} lang={lang} isPro={isPro} />}
         {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={setProfile} lang={lang} policies={policies} onImport={handleImportPortfolio} isPro={isPro} />}
         {activeTab === 'vault' && <VaultView policies={policies} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} lang={lang} isPro={isPro} user={user} />}
+        {activeTab === 'sharing' && (profile ? <SharingView user={user} profile={profile} onUpdateProfile={setProfile} lang={lang} isPro={isPro} /> : <ProfileRequiredView />)}
         {activeTab === 'admin' && <AdminConsole currentUser={user} lang={lang} />}
       </main>
 

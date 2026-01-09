@@ -196,39 +196,40 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const inputClasses = "w-full p-3 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none";
-  const checkboxClasses = "w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 transition-all cursor-pointer";
+  const inputClasses = "w-full p-3.5 bg-white border border-slate-300 rounded-2xl text-[15px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none font-medium leading-normal placeholder:text-slate-400";
+  const labelClasses = "block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5 px-0.5";
+  const checkboxClasses = "w-5 h-5 text-indigo-600 border-slate-300 rounded-lg focus:ring-indigo-500 transition-all cursor-pointer shadow-sm";
 
   return (
     <div className="space-y-8 pb-10">
-      <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-8">
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start space-x-4">
-          <div className="text-2xl mt-1">💡</div>
+      <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-10">
+        <div className="bg-blue-50/50 border border-blue-100 rounded-[1.75rem] p-5 flex items-start space-x-5">
+          <div className="text-3xl mt-1">💡</div>
           <div>
-            <h4 className="font-bold text-blue-900 text-sm mb-1">AI Intelligence</h4>
-            <p className="text-blue-800 text-xs leading-relaxed opacity-90">{t.aiAccuracyNotice}</p>
+            <h4 className="font-extrabold text-blue-900 text-sm mb-1.5 uppercase tracking-tight">AI Intelligence</h4>
+            <p className="text-blue-800 text-[13px] leading-relaxed font-medium opacity-90">{t.aiAccuracyNotice}</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-xl shadow-inner">👤</div>
+        <div className="flex items-center space-x-4">
+          <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-indigo-100/50">👤</div>
           <div>
-            <h3 className="text-xl font-black text-slate-900">{t.personalInfo}</h3>
-            <p className="text-xs text-slate-400 font-medium">Keep your profile updated for better insights</p>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{t.personalInfo}</h3>
+            <p className="text-sm text-slate-400 font-bold uppercase tracking-widest mt-0.5">Profile Context</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div className="space-y-6">
-              <h4 className="font-black text-xs text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-2">{t.identity}</h4>
+            <div className="space-y-8">
+              <h4 className="font-black text-xs text-slate-400 uppercase tracking-[0.25em] border-b border-slate-100 pb-3">{t.identity}</h4>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.fullName}</label>
+                <label className={labelClasses}>{t.fullName}</label>
                 <input type="text" className={inputClasses} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.sex}</label>
+                  <label className={labelClasses}>{t.sex}</label>
                   <select className={inputClasses} value={formData.sex} onChange={(e) => setFormData({ ...formData, sex: e.target.value as any })}>
                     <option value="Male">{t.male}</option>
                     <option value="Female">{t.female}</option>
@@ -236,13 +237,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.birthDate}</label>
+                  <label className={labelClasses}>{t.birthDate}</label>
                   <input type="date" className={inputClasses} value={formData.birthDate} onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.maritalStatus}</label>
+                  <label className={labelClasses}>{t.maritalStatus}</label>
                   <select className={inputClasses} value={formData.maritalStatus} onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value as any })}>
                     <option value="Single">{t.single}</option>
                     <option value="Married">{t.married}</option>
@@ -251,203 +252,157 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.dependents}</label>
+                  <label className={labelClasses}>{t.dependents}</label>
                   <input type="number" min="0" className={inputClasses} value={formData.dependents} onChange={(e) => setFormData({ ...formData, dependents: Math.max(0, parseInt(e.target.value) || 0) })} />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <h4 className="font-black text-xs text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-2">{t.financial}</h4>
+            <div className="space-y-8">
+              <h4 className="font-black text-xs text-slate-400 uppercase tracking-[0.25em] border-b border-slate-100 pb-3">{t.financial}</h4>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.income} ({t.yearly})</label>
+                <label className={labelClasses}>{t.income} ({t.yearly})</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                  <input type="text" inputMode="decimal" className={`${inputClasses} pl-8 font-bold text-slate-800`} value={incomeStr} onChange={handleNumericChange(setIncomeStr)} />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-lg">฿</span>
+                  <input type="text" inputMode="decimal" className={`${inputClasses} pl-10 font-extrabold text-slate-800`} value={incomeStr} onChange={handleNumericChange(setIncomeStr)} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.expenses} ({t.monthly})</label>
+                <label className={labelClasses}>{t.expenses} ({t.monthly})</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                  <input type="text" inputMode="decimal" className={`${inputClasses} pl-8`} value={expenseStr} onChange={handleNumericChange(setExpenseStr)} />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-lg">฿</span>
+                  <input type="text" inputMode="decimal" className={`${inputClasses} pl-10 font-bold`} value={expenseStr} onChange={handleNumericChange(setExpenseStr)} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.totalDebt}</label>
+                <label className={labelClasses}>{t.totalDebt}</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-                  <input type="text" inputMode="decimal" className={`${inputClasses} pl-8 text-rose-600 font-black`} value={debtStr} onChange={handleNumericChange(setDebtStr)} />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-lg">฿</span>
+                  <input type="text" inputMode="decimal" className={`${inputClasses} pl-10 text-rose-600 font-black`} value={debtStr} onChange={handleNumericChange(setDebtStr)} />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-8">
-             <div className="flex items-center space-x-3 border-b border-slate-100 pb-3">
-               <span className="text-xl">💰</span>
-               <h4 className="font-black text-xs text-slate-800 uppercase tracking-[0.2em]">{t.taxDeductions}</h4>
+          <div className="space-y-10">
+             <div className="flex items-center space-x-4 border-b border-slate-100 pb-4">
+               <span className="text-2xl">💰</span>
+               <h4 className="font-black text-xs text-slate-800 uppercase tracking-[0.25em]">{t.taxDeductions}</h4>
              </div>
              
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="p-6 bg-slate-50/50 border border-slate-100 rounded-3xl space-y-5">
-                   <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                     <span className="text-sm">🏠</span> {t.taxFamily}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="p-8 bg-slate-50/50 border border-slate-100 rounded-[2rem] space-y-6">
+                   <h5 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2.5">
+                     <span className="text-xl">🏠</span> {t.taxFamily}
                    </h5>
-                   <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
-                          <span className="text-xs font-bold text-slate-700">{t.fatherCare}</span>
+                   <div className="space-y-5">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <span className="text-[13px] font-bold text-slate-700">{t.fatherCare}</span>
                           <input type="checkbox" className={checkboxClasses} checked={fatherCare} onChange={(e) => setFatherCare(e.target.checked)} />
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
-                          <span className="text-xs font-bold text-slate-700">{t.motherCare}</span>
+                        <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <span className="text-[13px] font-bold text-slate-700">{t.motherCare}</span>
                           <input type="checkbox" className={checkboxClasses} checked={motherCare} onChange={(e) => setMotherCare(e.target.checked)} />
                         </div>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                      <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
                         <div className="flex flex-col">
-                           <span className="text-xs font-bold text-slate-700">{t.spouseNoIncome}</span>
+                           <span className="text-[13px] font-bold text-slate-700">{t.spouseNoIncome}</span>
                         </div>
                         <input type="checkbox" className={checkboxClasses} checked={spouseDeduction} onChange={(e) => setSpouseDeduction(e.target.checked)} />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.childAllowance}</label>
+                          <label className={labelClasses}>{t.childAllowance}</label>
                           <input type="number" min="0" className={inputClasses} value={childAllowance} onChange={(e) => setChildAllowance(Math.max(0, parseInt(e.target.value) || 0))} />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.disabledCare}</label>
+                          <label className={labelClasses}>{t.disabledCare}</label>
                           <input type="number" min="0" className={inputClasses} value={disabledCount} onChange={(e) => setDisabledCount(Math.max(0, parseInt(e.target.value) || 0))} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.parentHealth}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={parentHealthStr} onChange={handleNumericChange(setParentHealthStr)} />
+                        <label className={labelClasses}>{t.parentHealth}</label>
+                        <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">฿</span>
+                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-9 text-[14px]`} value={parentHealthStr} onChange={handleNumericChange(setParentHealthStr)} />
                         </div>
                       </div>
                    </div>
                 </div>
 
-                <div className="p-6 bg-slate-50/50 border border-slate-100 rounded-3xl space-y-5">
-                   <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                     <span className="text-sm">📈</span> {t.taxInvest}
+                <div className="p-8 bg-slate-50/50 border border-slate-100 rounded-[2rem] space-y-6">
+                   <h5 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2.5">
+                     <span className="text-xl">📈</span> {t.taxInvest}
                    </h5>
-                   <div className="grid grid-cols-2 gap-4">
+                   <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.socialSecurity}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={ssStr} onChange={handleNumericChange(setSsStr)} />
+                        <label className={labelClasses}>{t.socialSecurity}</label>
+                        <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">฿</span>
+                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-9 text-[14px]`} value={ssStr} onChange={handleNumericChange(setSsStr)} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.pvd}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={pvdStr} onChange={handleNumericChange(setPvdStr)} />
+                        <label className={labelClasses}>{t.pvd}</label>
+                        <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">฿</span>
+                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-9 text-[14px]`} value={pvdStr} onChange={handleNumericChange(setPvdStr)} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.ssf}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={ssfStr} onChange={handleNumericChange(setSsfStr)} />
+                        <label className={labelClasses}>{t.ssf}</label>
+                        <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">฿</span>
+                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-9 text-[14px]`} value={ssfStr} onChange={handleNumericChange(setSsfStr)} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.rmf}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={rmfStr} onChange={handleNumericChange(setRmfStr)} />
+                        <label className={labelClasses}>{t.rmf}</label>
+                        <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">฿</span>
+                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-9 text-[14px]`} value={rmfStr} onChange={handleNumericChange(setRmfStr)} />
                         </div>
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.thaiEsg}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={esgStr} onChange={handleNumericChange(setEsgStr)} />
-                        </div>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="p-6 bg-slate-50/50 border border-slate-100 rounded-3xl space-y-5">
-                   <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                     <span className="text-sm">🏢</span> {t.taxProperty}
-                   </h5>
-                   <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.homeLoan}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={homeLoanStr} onChange={handleNumericChange(setHomeLoanStr)} />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.prenatal}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={prenatalStr} onChange={handleNumericChange(setPrenatalStr)} />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.otherDeductions}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={otherDedStr} onChange={handleNumericChange(setOtherDedStr)} />
-                        </div>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="p-6 bg-slate-50/50 border border-slate-100 rounded-3xl space-y-5">
-                   <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                     <span className="text-sm">🙏</span> {t.taxDonation}
-                   </h5>
-                   <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.donations}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs`} value={donationsStr} onChange={handleNumericChange(setDonationsStr)} />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.donationsEdu}</label>
-                        <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold text-emerald-600">฿</span>
-                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-7 text-xs border-emerald-100`} value={donationsEduStr} onChange={handleNumericChange(setDonationsEduStr)} />
+                        <label className={labelClasses}>{t.thaiEsg}</label>
+                        <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">฿</span>
+                          <input type="text" inputMode="decimal" className={`${inputClasses} pl-9 text-[14px]`} value={esgStr} onChange={handleNumericChange(setEsgStr)} />
                         </div>
                       </div>
                    </div>
                 </div>
              </div>
 
-             <div className="pt-6">
+             <div className="pt-8">
                 <div className="p-10 bg-indigo-900 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
-                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-                   <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none"></div>
+                   <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-40 -mt-40 pointer-events-none"></div>
+                   <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -ml-40 -mb-40 pointer-events-none"></div>
 
-                   <div className="relative z-10 space-y-8">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                   <div className="relative z-10 space-y-10">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                         <div>
-                          <div className="flex items-center gap-3 mb-2">
-                             <span className="text-3xl bg-white/10 p-2 rounded-2xl">🧾</span>
-                             <h5 className="text-xs font-black uppercase tracking-[0.3em] text-indigo-200">{t.actualTaxPayments}</h5>
+                          <div className="flex items-center gap-3.5 mb-3">
+                             <span className="text-4xl bg-white/10 p-2.5 rounded-2xl">🧾</span>
+                             <h5 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-200">{t.actualTaxPayments}</h5>
                           </div>
-                          <h4 className="text-2xl font-black tracking-tight">{t.taxWithheld}</h4>
-                          <p className="text-indigo-300 text-xs mt-2 max-w-md font-medium leading-relaxed">
+                          <h4 className="text-3xl font-black tracking-tight mb-2.5">{t.taxWithheld}</h4>
+                          <p className="text-indigo-200/70 text-[14px] max-w-lg font-medium leading-relaxed">
                             {lang === 'en' 
                               ? "Total amount of tax already deducted from your income or paid as prepayments to the Revenue Department."
                               : "ยอดเงินภาษีที่ท่านได้ชำระไปแล้วในระหว่างปี (เช่น ภาษีหัก ณ ที่จ่ายจากเงินเดือน หรือยอดที่จ่ายล่วงหน้า)"}
                           </p>
                         </div>
                         <div className="flex-shrink-0 text-center md:text-right">
-                           <span className="text-xs font-black uppercase text-indigo-300 tracking-widest block mb-1 opacity-60">{t.alreadySettledThb}</span>
+                           <span className="text-[10px] font-black uppercase text-indigo-300 tracking-widest block mb-1.5 opacity-60">{t.alreadySettledThb}</span>
                            <span className="text-5xl font-black tabular-nums tracking-tighter">฿{taxWithheldStr || '0'}</span>
                         </div>
                       </div>
 
                       <div className="max-w-2xl">
                          <div className="relative">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-indigo-400 text-2xl font-black">฿</span>
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 text-3xl font-black">฿</span>
                             <input 
                                type="text" 
                                inputMode="decimal" 
                                placeholder={lang === 'en' ? "Enter total tax paid..." : "ระบุยอดรวมภาษีที่จ่ายไปแล้ว..."}
-                               className="w-full p-6 pl-14 bg-white/10 border-2 border-white/10 rounded-[1.5rem] text-xl font-black text-white placeholder:text-white/20 focus:ring-4 focus:ring-white/5 focus:border-white/30 outline-none transition-all shadow-inner" 
+                               className="w-full p-8 pl-16 bg-white/10 border-2 border-white/10 rounded-[2rem] text-2xl font-black text-white placeholder:text-white/20 focus:ring-4 focus:ring-white/5 focus:border-white/30 outline-none transition-all shadow-inner" 
                                value={taxWithheldStr} 
                                onChange={handleNumericChange(setTaxWithheldStr)} 
                             />
@@ -458,31 +413,35 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
              </div>
           </div>
 
-          <div className="pt-8 border-t border-slate-100 flex justify-end">
-            <button type="submit" className="px-12 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all active:scale-95 text-lg">
+          <div className="pt-10 border-t border-slate-100 flex justify-end">
+            <button type="submit" className="px-14 py-5 bg-indigo-600 text-white rounded-[2rem] font-black hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all active:scale-95 text-xl tracking-tight">
               {t.updateProfile}
             </button>
           </div>
         </form>
       </div>
 
-      <div className={`p-6 md:p-8 rounded-[2.5rem] border border-slate-200 space-y-6 transition-all relative overflow-hidden ${isPro ? 'bg-slate-50' : 'bg-slate-100 filter grayscale-[0.2]'}`}>
+      <div className={`p-8 md:p-10 rounded-[2.5rem] border border-slate-200 space-y-8 transition-all relative overflow-hidden ${isPro ? 'bg-slate-50' : 'bg-slate-100 filter grayscale-[0.2]'}`}>
         {!isPro && (
-          <div className="absolute inset-0 z-20 bg-white/40 backdrop-blur-[1px] flex items-center justify-center">
-            <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 text-center max-w-xs">
-              <span className="text-4xl mb-3 block">🔒</span>
-              <p className="text-slate-800 font-bold mb-1">{t.proFeature}</p>
-              <button className="w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">{t.upgradeNow}</button>
+          <div className="absolute inset-0 z-20 bg-white/50 backdrop-blur-[2px] flex items-center justify-center">
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 text-center max-w-sm">
+              <span className="text-5xl mb-4 block">🔒</span>
+              <p className="text-slate-800 font-extrabold text-lg mb-1.5 leading-tight">{t.proFeature}</p>
+              <p className="text-slate-500 text-sm mb-6 font-medium leading-relaxed">{t.proDesc}</p>
+              <button className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-indigo-100">{t.upgradeNow}</button>
             </div>
           </div>
         )}
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm border border-slate-100">📂</div>
-          <div><h3 className="text-xl font-bold text-slate-900">{t.dataManagement}</h3></div>
+        <div className="flex items-center space-x-4">
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-slate-100">📂</div>
+          <div>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">{t.dataManagement}</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Persistence & Backups</p>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button onClick={handleExport} disabled={!isPro} className={`py-4 rounded-xl font-bold text-xs ${isPro ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-300'}`}>⬇️ {t.exportData}</button>
-          <button onClick={handleImportClick} disabled={!isPro} className={`py-4 rounded-xl font-bold text-xs border ${isPro ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-100' : 'bg-slate-50 text-slate-300 border-slate-100'}`}>⬆️ {t.importData}</button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <button onClick={handleExport} disabled={!isPro} className={`py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm ${isPro ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-50 text-slate-300'}`}>⬇️ {t.exportData}</button>
+          <button onClick={handleImportClick} disabled={!isPro} className={`py-5 rounded-2xl font-black text-xs uppercase tracking-widest border shadow-sm ${isPro ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-100' : 'bg-slate-50 text-slate-300 border-slate-100'}`}>⬆️ {t.importData}</button>
           <input type="file" ref={fileInputRef} onChange={handleFileImport} className="hidden" accept=".json" />
         </div>
       </div>

@@ -86,6 +86,10 @@ export interface UserProfile {
   totalDebt: number;
   familyNotes?: string;
   taxDeductions?: TaxDeductions;
+  // Sharing Features
+  isPublicProfile?: boolean;
+  shareSlug?: string;
+  sharedWithEmails?: string[];
 }
 
 export interface GapAnalysisResult {

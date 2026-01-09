@@ -114,43 +114,43 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
           <div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.totalSumAssured}</p>
-            <h3 className="text-2xl font-black text-blue-600 mt-1">฿{totalSumAssured.toLocaleString()}</h3>
+            <p className="text-slate-500 text-[11px] font-bold uppercase tracking-[0.1em]">{t.totalSumAssured}</p>
+            <h3 className="text-2xl font-black text-blue-600 mt-1.5">฿{totalSumAssured.toLocaleString()}</h3>
           </div>
-          <p className="text-[9px] text-slate-400 mt-2 italic">{t.totalSumAssuredNote}</p>
+          <p className="text-[11px] text-slate-400 mt-2.5 font-medium italic leading-relaxed">{t.totalSumAssuredNote}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.hospitalBenefit}</p>
-          <h3 className="text-2xl font-black text-pink-500 mt-1">฿{totalHospitalBenefit.toLocaleString()} <span className="text-xs font-medium text-slate-400">{t.perDay}</span></h3>
+          <p className="text-slate-500 text-[11px] font-bold uppercase tracking-[0.1em]">{t.hospitalBenefit}</p>
+          <h3 className="text-2xl font-black text-pink-500 mt-1.5">฿{totalHospitalBenefit.toLocaleString()} <span className="text-xs font-medium text-slate-400">{t.perDay}</span></h3>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.dailyRoomRate}</p>
-          <h3 className="text-2xl font-black text-emerald-600 mt-1">฿{totalRoomRate.toLocaleString()} <span className="text-xs font-medium text-slate-400">{t.perDay}</span></h3>
+          <p className="text-slate-500 text-[11px] font-bold uppercase tracking-[0.1em]">{t.dailyRoomRate}</p>
+          <h3 className="text-2xl font-black text-emerald-600 mt-1.5">฿{totalRoomRate.toLocaleString()} <span className="text-xs font-medium text-slate-400">{t.perDay}</span></h3>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.annualPremium}</p>
-          <h3 className="text-2xl font-black text-amber-500 mt-1">฿{annualPremium.toLocaleString()}</h3>
+          <p className="text-slate-500 text-[11px] font-bold uppercase tracking-[0.1em]">{t.annualPremium}</p>
+          <h3 className="text-2xl font-black text-amber-500 mt-1.5">฿{annualPremium.toLocaleString()}</h3>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[400px] flex flex-col">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="font-bold text-lg">{t.coverageDist}</h4>
-            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-1 rounded-full font-bold uppercase tracking-widest">{t.activeOnly}</span>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[420px] flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-extrabold text-lg text-slate-800 tracking-tight">{t.coverageDist}</h4>
+            <span className="text-[10px] bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest">{t.activeOnly}</span>
           </div>
           
           {chartData.length > 0 ? (
             <>
-              <div className="flex-1 h-[250px]">
+              <div className="flex-1 h-[260px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie 
                       data={chartData} 
                       cx="50%" 
                       cy="50%" 
-                      innerRadius={60} 
-                      outerRadius={90} 
+                      innerRadius={65} 
+                      outerRadius={95} 
                       paddingAngle={5} 
                       dataKey="value"
                       animationBegin={0}
@@ -162,22 +162,28 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                     </Pie>
                     <Tooltip 
                       formatter={(value: number) => [`฿${value.toLocaleString()}`, t.sumAssured]}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{ 
+                        borderRadius: '16px', 
+                        border: 'none', 
+                        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                        fontFamily: 'inherit',
+                        fontSize: '13px'
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
               
-              <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-50">
+              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-50">
                 {chartData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center space-x-2">
+                  <div key={entry.name} className="flex items-start space-x-2.5">
                     <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      className="w-3.5 h-3.5 rounded-full flex-shrink-0 mt-0.5" 
                       style={{ backgroundColor: entry.color }} 
                     />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-semibold text-slate-700 truncate">{entry.name}</span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-xs font-bold text-slate-700 truncate">{entry.name}</span>
+                      <span className="text-[11px] text-slate-400 font-medium">
                         {((entry.value / (totalSumAssured || 1)) * 100).toFixed(1)}%
                       </span>
                     </div>
@@ -186,27 +192,27 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 opacity-40">
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-40">
               <span className="text-6xl">🥧</span>
-              <p className="text-sm font-medium">{t.addActivePolicies}</p>
+              <p className="text-sm font-semibold text-slate-600">{t.addActivePolicies}</p>
             </div>
           )}
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="font-bold text-lg">{t.upcomingRenewals}</h4>
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="font-extrabold text-lg text-slate-800 tracking-tight">{t.upcomingRenewals}</h4>
             <button 
               onClick={handleSyncCalendar}
               disabled={activeAndGracePolicies.length === 0}
-              className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-[10px] font-black uppercase tracking-widest px-3.5 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
             >
               📅 {t.syncCalendar}
             </button>
           </div>
           <div className="space-y-4 flex-1">
             {policies.length === 0 ? (
-              <div className="text-center py-24 text-slate-400 italic text-sm border-2 border-dashed border-slate-100 rounded-2xl">
+              <div className="text-center py-28 text-slate-400 italic text-sm border-2 border-dashed border-slate-100 rounded-3xl">
                 {t.noRenewalsTrack}
               </div>
             ) : (
@@ -216,26 +222,26 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                 .map(p => {
                   const currentStatus = calculatePolicyStatus(p.dueDate);
                   return (
-                    <div key={p.id} onClick={() => onViewDetails(p)} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer group transition-all border border-transparent hover:border-slate-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-[10px] text-blue-600 shadow-sm group-hover:scale-105 transition-transform">
+                    <div key={p.id} onClick={() => onViewDetails(p)} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-white hover:shadow-md cursor-pointer group transition-all border border-transparent hover:border-slate-100">
+                      <div className="flex items-center space-x-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-white border border-slate-100 flex items-center justify-center font-black text-[11px] text-blue-600 shadow-sm group-hover:scale-105 transition-transform">
                           {p.company.substring(0, 3).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm truncate">{p.planName}</p>
-                          <p className="text-xs text-slate-500">{t.due}: {new Date(p.dueDate).toLocaleDateString()}</p>
+                          <p className="font-bold text-[15px] text-slate-800 truncate leading-tight mb-0.5">{p.planName}</p>
+                          <p className="text-xs text-slate-500 font-medium">{t.due}: {new Date(p.dueDate).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-sm">฿{p.premiumAmount.toLocaleString()}</p>
-                        <div className="flex flex-col items-end space-y-1 mt-1">
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold uppercase tracking-tight">
+                        <p className="font-extrabold text-[15px] text-slate-900">฿{p.premiumAmount.toLocaleString()}</p>
+                        <div className="flex flex-col items-end space-y-1.5 mt-1.5">
+                          <span className="text-[10px] px-2 py-0.5 rounded-lg bg-blue-100/50 text-blue-700 font-black uppercase tracking-tight">
                             {getFreqLabel(p.frequency)}
                           </span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                            currentStatus === 'Active' ? 'bg-green-100 text-green-700' : 
-                            currentStatus === 'Grace Period' ? 'bg-amber-100 text-amber-700' : 
-                            'bg-red-100 text-red-700'
+                          <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold ${
+                            currentStatus === 'Active' ? 'bg-green-100/80 text-green-700' : 
+                            currentStatus === 'Grace Period' ? 'bg-amber-100/80 text-amber-700' : 
+                            'bg-red-100/80 text-red-700'
                           }`}>
                             {currentStatus === 'Active' ? t.active : 
                              currentStatus === 'Grace Period' ? t.gracePeriod : 
@@ -249,7 +255,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
             )}
           </div>
           {activeAndGracePolicies.length > 0 && (
-            <p className="text-[9px] text-slate-400 mt-4 text-center italic">
+            <p className="text-[11px] text-slate-400 mt-4 text-center italic font-medium">
               {t.calendarDesc}
             </p>
           )}

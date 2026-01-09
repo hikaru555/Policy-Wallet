@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,11 +6,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Policy Wallet</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
     <style>
-      body { 
-        font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+      :root {
+        /* Optimized stack for modern FinTech feel and maximum Thai readability */
+        --font-main: 'Plus Jakarta Sans', 'IBM Plex Sans Thai', system-ui, -apple-system, sans-serif;
       }
+      body { 
+        font-family: var(--font-main);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        /* Standard line height 1.6 - 1.7 is ideal for Thai tone marks to prevent clipping */
+        line-height: 1.65;
+        font-size: 16px;
+      }
+      
+      /* Thai-specific character spacing adjustment for visual equality with English */
+      [lang="th"] {
+        letter-spacing: 0.01em;
+      }
+
+      /* Scale up utility text for better accessibility */
+      .text-tiny { font-size: 0.75rem; line-height: 1.1rem; }
+      
       @keyframes blob {
         0% { transform: translate(0px, 0px) scale(1); }
         33% { transform: translate(30px, -50px) scale(1.1); }
@@ -23,7 +45,7 @@
         animation-delay: 2s;
       }
 
-      /* Hide the default browser date placeholder (e.g., dd/mm/yyyy or วว/ดด/ปปปป) when empty */
+      /* Native Date Input Styling to match the professional theme */
       input[type="date"]::-webkit-datetime-edit-text,
       input[type="date"]::-webkit-datetime-edit-month-field,
       input[type="date"]::-webkit-datetime-edit-day-field,
@@ -31,7 +53,6 @@
         color: transparent;
       }
       
-      /* Show the date format/values only when the input has a value or is focused */
       input[type="date"]:focus::-webkit-datetime-edit-text,
       input[type="date"]:focus::-webkit-datetime-edit-month-field,
       input[type="date"]:focus::-webkit-datetime-edit-day-field,
@@ -46,6 +67,12 @@
       input[type="date"]:valid::-webkit-datetime-edit-year-field {
         color: inherit;
       }
+      
+      /* Scrollbar Styling */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
   <script type="importmap">
 {
@@ -60,7 +87,7 @@
 }
 </script>
 </head>
-  <body class="bg-slate-50 text-slate-900">
+  <body class="bg-slate-50 text-slate-900 overflow-x-hidden">
     <div id="root"></div>
   </body>
 </html>

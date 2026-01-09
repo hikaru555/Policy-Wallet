@@ -48,24 +48,24 @@ const GuestView: React.FC<GuestViewProps> = ({ policies, profile, lang }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-slate-200 p-6 md:p-12 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#0F172A] text-slate-200 p-6 md:p-12 selection:bg-indigo-500/30">
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Luxury Header */}
-        <header className="flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/20">
+        <header className="flex flex-col md:flex-row items-center justify-between gap-10 text-center md:text-left">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/20 border border-white/10">
               <span className="text-3xl">🛡️</span>
             </div>
             <div>
               <h1 className="text-3xl font-black tracking-tight text-white">{t.publicViewTitle}</h1>
-              <p className="text-slate-400 text-sm font-medium mt-1">
-                {t.publicViewDesc} <span className="text-indigo-400 font-bold">{profile.name}</span>
+              <p className="text-slate-400 text-[15px] font-medium mt-1">
+                {t.publicViewDesc} <span className="text-indigo-400 font-extrabold">{profile.name}</span>
               </p>
             </div>
           </div>
           <button 
             onClick={handleCreateOwn}
-            className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-sm font-bold transition-all text-white backdrop-blur-md"
+            className="px-8 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[14px] font-black uppercase tracking-widest transition-all text-white backdrop-blur-md active:scale-95"
           >
             {t.viewPersonalWallet}
           </button>
@@ -73,60 +73,62 @@ const GuestView: React.FC<GuestViewProps> = ({ policies, profile, lang }) => {
 
         {/* Hero Card */}
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-          <div className="relative bg-[#1E293B] border border-white/5 rounded-[2.5rem] p-8 md:p-12 shadow-2xl overflow-hidden">
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+          <div className="relative bg-[#1E293B] border border-white/5 rounded-[3rem] p-8 md:p-12 shadow-2xl overflow-hidden">
              {/* Background glows */}
-             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-             <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+             <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -mr-40 -mt-40 pointer-events-none"></div>
+             <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -ml-40 -mb-40 pointer-events-none"></div>
 
              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div className="space-y-8">
+                <div className="space-y-10">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-2 block">{t.protectionSummary}</span>
-                    <h2 className="text-5xl font-black text-white tracking-tighter">
+                    <span className="text-[11px] font-black uppercase tracking-[0.35em] text-indigo-400 mb-3 block">{t.protectionSummary}</span>
+                    <h2 className="text-6xl font-black text-white tracking-tighter tabular-nums">
                       ฿{totalSumAssured.toLocaleString()}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-3 leading-relaxed">{t.totalSumAssuredNote}</p>
+                    <p className="text-slate-400 text-sm mt-4 leading-relaxed font-medium">{t.totalSumAssuredNote}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                       <span className="text-[9px] font-bold uppercase text-slate-500 block mb-1">{t.dailyRoomRate}</span>
-                       <span className="text-xl font-bold text-emerald-400">฿{totalRoomRate.toLocaleString()}</span>
+                    <div className="bg-white/5 p-5 rounded-3xl border border-white/5 transition-colors hover:bg-white/10">
+                       <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block mb-1.5">{t.dailyRoomRate}</span>
+                       <span className="text-2xl font-black text-emerald-400 tabular-nums">฿{totalRoomRate.toLocaleString()}</span>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                       <span className="text-[9px] font-bold uppercase text-slate-500 block mb-1">{t.active}</span>
-                       <span className="text-xl font-bold text-blue-400">{activePolicies.length} {t.policies}</span>
+                    <div className="bg-white/5 p-5 rounded-3xl border border-white/5 transition-colors hover:bg-white/10">
+                       <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider block mb-1.5">{t.active}</span>
+                       <span className="text-2xl font-black text-blue-400 tabular-nums">{activePolicies.length} {t.policies}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="h-[280px] w-full">
+                <div className="h-[300px] w-full relative">
                   {chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie 
                           data={chartData} 
                           cx="50%" cy="50%" 
-                          innerRadius={65} outerRadius={95} 
+                          innerRadius={75} outerRadius={105} 
                           paddingAngle={8} 
                           dataKey="value"
                           stroke="none"
+                          animationBegin={200}
+                          animationDuration={1000}
                         >
                           {chartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
                         <Tooltip 
-                          contentStyle={{ backgroundColor: '#1E293B', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                          contentStyle={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '13px', fontWeight: 'bold' }}
                           itemStyle={{ color: '#fff' }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center opacity-30">
+                    <div className="h-full flex flex-col items-center justify-center opacity-30 border-2 border-dashed border-white/10 rounded-[2rem]">
                        <span className="text-6xl mb-4">📊</span>
-                       <p className="text-sm font-bold">No data available</p>
+                       <p className="text-sm font-black uppercase tracking-widest">No data available</p>
                     </div>
                   )}
                 </div>
@@ -135,26 +137,26 @@ const GuestView: React.FC<GuestViewProps> = ({ policies, profile, lang }) => {
         </div>
 
         {/* Policy Breakdown */}
-        <div className="space-y-6">
-           <div className="flex items-center gap-3">
+        <div className="space-y-8">
+           <div className="flex items-center gap-4 px-4">
              <div className="h-px flex-1 bg-white/10"></div>
-             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">{t.policySummary}</h3>
+             <h3 className="text-[11px] font-black uppercase tracking-[0.45em] text-slate-500">{t.policySummary}</h3>
              <div className="h-px flex-1 bg-white/10"></div>
            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {activePolicies.map(p => (
-                <div key={p.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
+                <div key={p.id} className="bg-white/5 border border-white/5 rounded-[2rem] p-6 hover:bg-white/10 transition-all group hover:-translate-y-1">
+                  <div className="flex justify-between items-start mb-5">
                     <div>
-                      <h4 className="font-bold text-white text-sm">{p.planName}</h4>
-                      <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">{p.company}</p>
+                      <h4 className="font-black text-white text-[17px] group-hover:text-indigo-400 transition-colors leading-tight mb-1">{p.planName}</h4>
+                      <p className="text-[11px] text-slate-500 uppercase font-black tracking-widest">{p.company}</p>
                     </div>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-black border border-blue-500/20 uppercase tracking-tighter">Active</span>
+                    <span className="text-[10px] px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 font-black border border-indigo-500/20 uppercase tracking-tighter">Active</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2.5">
                     {p.coverages.map((c, idx) => (
-                      <div key={idx} className="px-2 py-1 bg-white/5 rounded-lg border border-white/5 text-[9px] font-bold text-slate-400">
+                      <div key={idx} className="px-3 py-1.5 bg-white/5 rounded-xl border border-white/5 text-[11px] font-bold text-slate-400">
                         {c.type}
                       </div>
                     ))}
@@ -165,21 +167,24 @@ const GuestView: React.FC<GuestViewProps> = ({ policies, profile, lang }) => {
         </div>
 
         {/* Consultant CTA */}
-        <footer className="pt-12 border-t border-white/5 flex flex-col items-center text-center space-y-8">
-           <div className="space-y-2">
-             <h4 className="text-xl font-bold text-white">{t.contactConsultant}</h4>
-             <p className="text-slate-500 text-sm">Expert guidance for insurance and financial planning.</p>
+        <footer className="pt-16 border-t border-white/5 flex flex-col items-center text-center space-y-10 pb-12">
+           <div className="space-y-3">
+             <h4 className="text-2xl font-black text-white tracking-tight">{t.contactConsultant}</h4>
+             <p className="text-slate-400 text-base font-medium leading-relaxed max-w-md">Professional guidance for insurance portfolio management and strategic financial planning.</p>
            </div>
            
            <button 
              onClick={handleContactAgent}
-             className="px-10 py-4 bg-[#00B900] hover:bg-[#00a300] text-white rounded-3xl font-black text-lg shadow-2xl shadow-green-500/20 transition-all flex items-center gap-4 active:scale-95 group"
+             className="px-12 py-5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-green-500/20 transition-all flex items-center gap-5 active:scale-95 group"
            >
-             <span className="text-3xl">🧔</span>
-             <span>LINE: @patrickfwd</span>
+             <span className="text-4xl bg-white/20 p-2.5 rounded-full group-hover:rotate-12 transition-transform">🧔</span>
+             <div className="text-left">
+                <span className="block text-[11px] uppercase tracking-widest font-black text-white/70">Connect on LINE</span>
+                <span className="block leading-tight">@patrickfwd</span>
+             </div>
            </button>
 
-           <div className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em]">
+           <div className="text-[11px] text-slate-600 font-black uppercase tracking-[0.3em] bg-white/5 px-6 py-2 rounded-full">
              {t.creatorCredit}
            </div>
         </footer>
