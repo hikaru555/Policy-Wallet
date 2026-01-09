@@ -265,7 +265,7 @@ export const translations = {
     substandard: "เพิ่มเบี้ย/ยกเว้นโรค (Sub-standard)",
     postpone: "เลื่อนการพิจารณา (Postpone)",
     decline: "ปฏิเสธการรับประกัน (Decline)",
-    welcomeBack: "ยินดีต้อนรับคุณกลับมาอีกครั้ง",
+    welcomeBack: "ยินดีต้อนับคุณกลับมาอีกครั้ง",
     shareReport: "แชร์รายงาน",
     addPolicy: "เพิ่มกรมธรรม์",
     cancel: "ยกเลิก",
