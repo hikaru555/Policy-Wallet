@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Policy, CoverageType, PaymentFrequency, calculatePolicyStatus } from '../types';
@@ -176,21 +177,26 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                 </ResponsiveContainer>
               </div>
               
-              <div className="grid grid-cols-2 gap-x-6 gap-y-4 mt-8 pt-6 border-t border-slate-50">
-                {chartData.map((entry) => (
-                  <div key={entry.name} className="flex items-start space-x-3">
-                    <div 
-                      className="w-4 h-4 rounded-full flex-shrink-0 mt-1 shadow-sm" 
-                      style={{ backgroundColor: entry.color }} 
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-base font-bold text-slate-700 truncate leading-tight">{entry.name}</span>
-                      <span className="text-sm text-slate-400 font-bold mt-0.5">
-                        {((entry.value / (chartData.reduce((sum, item) => sum + item.value, 0) || 1)) * 100).toFixed(1)}%
-                      </span>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-6 mt-8 pt-6 border-t border-slate-50">
+                {chartData.map((entry) => {
+                  const totalValue = chartData.reduce((sum, item) => sum + item.value, 0) || 1;
+                  const percentage = ((entry.value / totalValue) * 100).toFixed(1);
+                  return (
+                    <div key={entry.name} className="flex items-start space-x-3">
+                      <div 
+                        className="w-4 h-4 rounded-full flex-shrink-0 mt-1 shadow-sm" 
+                        style={{ backgroundColor: entry.color }} 
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-base font-bold text-slate-700 truncate leading-tight mb-1">{entry.name}</span>
+                        <div className="flex items-baseline gap-2">
+                           <span className="text-sm font-black text-slate-900 tabular-nums">฿{entry.value.toLocaleString()}</span>
+                           <span className="text-xs text-slate-400 font-bold">{percentage}%</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           ) : (

@@ -17,21 +17,14 @@ export const STORAGE_KEYS = {
 export const storageManager = {
   init() {
     const storedVersion = localStorage.getItem(STORAGE_KEYS.VERSION);
-    
-    if (!storedVersion) {
-      localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
-      return;
-    }
-
-    if (storedVersion !== CURRENT_VERSION) {
+    if (!storedVersion || storedVersion !== CURRENT_VERSION) {
       localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
     }
   },
 
   save<T>(key: string, data: T): void {
     try {
-      const serializedData = JSON.stringify(data);
-      localStorage.setItem(key, serializedData);
+      localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
       console.error(`Failed to save to storage: ${key}`, e);
     }
@@ -68,10 +61,6 @@ export const storageManager = {
 
   clearSession(): void {
     localStorage.removeItem(STORAGE_KEYS.SESSION);
-  },
-
-  wipeAll(): void {
-    Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
   },
 
   getStats() {

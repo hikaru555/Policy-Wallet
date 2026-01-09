@@ -31,7 +31,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   ]);
 
   const formatWithCommas = (value: string | number) => {
-    if (value === undefined || value === null || value === '') return '';
+    if (value === undefined || value === null || value === '' || value === 0 || value === '0') return '';
     const stringValue = value.toString().replace(/,/g, '');
     if (isNaN(Number(stringValue))) return stringValue;
     const parts = stringValue.split('.');
@@ -41,6 +41,12 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
 
   const parseCommas = (value: string) => {
     return value.replace(/,/g, '');
+  };
+
+  const handleFocus = (currentValue: string, setter: (val: string) => void) => {
+    if (currentValue === '0' || currentValue === '') {
+      setter('');
+    }
   };
 
   useEffect(() => {
@@ -195,7 +201,16 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.premium} *</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
-              <input type="text" inputMode="decimal" className={`${inputClasses} pl-8`} value={basicInfo.premiumAmount} onChange={handlePremiumChange} required />
+              <input 
+                type="text" 
+                inputMode="decimal" 
+                className={`${inputClasses} pl-8`} 
+                value={basicInfo.premiumAmount} 
+                onChange={handlePremiumChange} 
+                onFocus={() => handleFocus(basicInfo.premiumAmount, (v) => setBasicInfo({...basicInfo, premiumAmount: v}))}
+                required 
+                placeholder="0"
+              />
             </div>
           </div>
           <div>
@@ -235,12 +250,34 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.sumAssured}</label>
-                    <div className="relative"><span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span><input type="text" inputMode="decimal" className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" value={c.sumAssured} onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} /></div>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span>
+                      <input 
+                        type="text" 
+                        inputMode="decimal" 
+                        className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
+                        value={c.sumAssured} 
+                        onChange={(e) => updateCoverage(idx, 'sumAssured', e.target.value)} 
+                        onFocus={() => { if (c.sumAssured === '0' || c.sumAssured === '') updateCoverage(idx, 'sumAssured', ''); }}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
                   {(c.type === CoverageType.HEALTH || (c.type as any) === 'Health Insurance') && (
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.dailyRoomRate}</label>
-                      <div className="relative"><span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span><input type="text" inputMode="decimal" className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" value={c.roomRate || ''} onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} placeholder="Optional" /></div>
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">฿</span>
+                        <input 
+                          type="text" 
+                          inputMode="decimal" 
+                          className="w-full p-2 pl-5 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
+                          value={c.roomRate || ''} 
+                          onChange={(e) => updateCoverage(idx, 'roomRate', e.target.value)} 
+                          onFocus={() => { if (c.roomRate === '0' || c.roomRate === '') updateCoverage(idx, 'roomRate', ''); }}
+                          placeholder="0" 
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

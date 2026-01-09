@@ -40,7 +40,7 @@ export interface PolicyDocument {
   name: string;
   category: 'Policy' | 'Receipt' | 'Medical' | 'Other';
   mimeType: string;
-  url: string; // Base64 or Blob URL for local session
+  url: string; 
   uploadDate: string;
 }
 
@@ -51,7 +51,7 @@ export interface Policy {
   planName: string;
   coverages: PolicyCoverage[];
   premiumAmount: number;
-  dueDate: string; // This is the next due date
+  dueDate: string;
   frequency: PaymentFrequency;
   status: 'Active' | 'Terminated' | 'Grace Period';
   documentUrl?: string;
@@ -63,19 +63,19 @@ export interface TaxDeductions {
   homeLoanInterest: number;
   ssf: number;
   rmf: number;
-  pvd: number; // Provident Fund / GPF
+  pvd: number;
   thaiEsg: number;
-  fatherCare: boolean; // 30,000 THB
-  motherCare: boolean; // 30,000 THB
-  parentHealthInsurance: number; // Max 15,000 THB
-  childAllowance: number; // 30,000 per child
-  spouseDeduction: boolean; // 60,000 THB (Only if spouse has no income)
-  disabledCareCount: number; // 60,000 per person
-  prenatalExpenses: number; // Actual max 60,000
+  fatherCare: boolean;
+  motherCare: boolean;
+  parentHealthInsurance: number;
+  childAllowance: number;
+  spouseDeduction: boolean;
+  disabledCareCount: number;
+  prenatalExpenses: number;
   donations: number;
-  donationsEducation: number; // 2x actual
+  donationsEducation: number;
   otherDeductions: number;
-  taxWithheld: number; // ภาษีที่ชำระไว้แล้วหรือโดนหัก ณ ที่จ่าย
+  taxWithheld: number;
 }
 
 export interface UserProfile {
@@ -89,7 +89,7 @@ export interface UserProfile {
   totalDebt: number;
   familyNotes?: string;
   taxDeductions?: TaxDeductions;
-  // Added properties for sharing functionality
+  // Added for sharing features
   isPublicProfile?: boolean;
   sharedWithEmails?: string[];
 }
@@ -122,16 +122,7 @@ export const calculatePolicyStatus = (dueDate: string): Policy['status'] => {
   const due = new Date(dueDate);
   due.setHours(0, 0, 0, 0);
 
-  if (today <= due) {
-    return 'Active';
-  }
-
-  const diffTime = Math.abs(today.getTime() - due.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays <= 30) {
-    return 'Grace Period';
-  }
-
-  return 'Terminated';
+  if (today <= due) return 'Active';
+  const diffDays = Math.ceil(Math.abs(today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays <= 30 ? 'Grace Period' : 'Terminated';
 };

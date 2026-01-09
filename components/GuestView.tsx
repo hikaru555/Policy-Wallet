@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Policy, UserProfile, CoverageType, calculatePolicyStatus } from '../types';
 import { translations, Language } from '../translations';
@@ -144,29 +145,27 @@ const GuestView: React.FC<GuestViewProps> = ({ policies, profile, lang }) => {
              <div className="h-px flex-1 bg-white/10"></div>
            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {activePolicies.map(p => (
-                <div key={p.id} className="bg-white/5 border border-white/5 rounded-[2rem] p-6 hover:bg-white/10 transition-all group hover:-translate-y-1">
-                  <div className="flex justify-between items-start mb-5">
-                    <div>
-                      <h4 className="font-black text-white text-[17px] group-hover:text-indigo-400 transition-colors leading-tight mb-1">{p.planName}</h4>
-                      <p className="text-[11px] text-slate-500 uppercase font-black tracking-widest">{p.company}</p>
-                    </div>
-                    <span className="text-[10px] px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 font-black border border-indigo-500/20 uppercase tracking-tighter">Active</span>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {chartData.map((entry, index) => {
+                const totalValue = chartData.reduce((sum, item) => sum + item.value, 0) || 1;
+                const percentage = ((entry.value / totalValue) * 100).toFixed(1);
+                return (
+                  <div key={entry.name} className="bg-white/5 border border-white/10 p-5 rounded-3xl flex items-start space-x-4 hover:bg-white/10 transition-colors">
+                     <div className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                     <div className="min-w-0">
+                        <p className="text-[13px] font-bold text-white truncate">{entry.name}</p>
+                        <div className="flex items-baseline gap-2 mt-1">
+                           <span className="text-[15px] font-black text-indigo-400">฿{entry.value.toLocaleString()}</span>
+                           <span className="text-[11px] font-bold text-slate-500">{percentage}%</span>
+                        </div>
+                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
-                    {p.coverages.map((c, idx) => (
-                      <div key={idx} className="px-3 py-1.5 bg-white/5 rounded-xl border border-white/5 text-[11px] font-bold text-slate-400">
-                        {c.type}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
            </div>
         </div>
 
-        {/* Consultant CTA */}
+        {/* Consultant CTA with Photo */}
         <footer className="pt-16 border-t border-white/5 flex flex-col items-center text-center space-y-10 pb-12">
            <div className="space-y-3">
              <h4 className="text-2xl font-black text-white tracking-tight">{t.contactConsultant}</h4>
@@ -177,7 +176,11 @@ const GuestView: React.FC<GuestViewProps> = ({ policies, profile, lang }) => {
              onClick={handleContactAgent}
              className="px-12 py-5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-green-500/20 transition-all flex items-center gap-5 active:scale-95 group"
            >
-             <span className="text-4xl bg-white/20 p-2.5 rounded-full group-hover:rotate-12 transition-transform">🧔</span>
+             <div className="w-14 h-14 bg-white/20 p-0.5 rounded-full group-hover:rotate-6 transition-transform overflow-hidden">
+                <img src="https://lh3.googleusercontent.com/d/1B0qfPjF8N1zYmXq5r2N5r2N5r2N5r2N" alt="Patrick FWD" className="w-full h-full object-cover rounded-full" onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Patrick+FWD&background=4F46E5&color=fff";
+                }} />
+             </div>
              <div className="text-left">
                 <span className="block text-[11px] uppercase tracking-widest font-black text-white/70">Connect on LINE</span>
                 <span className="block leading-tight">@patrickfwd</span>

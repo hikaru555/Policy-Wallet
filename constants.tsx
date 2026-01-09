@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const otherCompanies = [
@@ -25,16 +24,6 @@ export const INSURANCE_COMPANIES = [
   'FWD Life Insurance',
   ...otherCompanies
 ];
-
-export const COMPANY_LOGOS: Record<string, string> = {
-  'AIA Thailand': 'https://picsum.photos/seed/aia/40/40',
-  'FWD Life Insurance': 'https://picsum.photos/seed/fwd/40/40',
-  'Allianz Ayudhya Life': 'https://picsum.photos/seed/allianz/40/40',
-  'Muang Thai Life Assurance': 'https://picsum.photos/seed/mtl/40/40',
-  'Krungthai-AXA Life': 'https://picsum.photos/seed/axa/40/40',
-  'Thai Life Insurance': 'https://picsum.photos/seed/thailife/40/40',
-  'Bangkok Life Assurance': 'https://picsum.photos/seed/bla/40/40',
-};
 
 export const EMERGENCY_CONTACTS = [
   { name: 'FWD Customer Service', phone: '1351' },
