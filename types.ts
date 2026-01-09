@@ -86,9 +86,8 @@ export interface UserProfile {
   totalDebt: number;
   familyNotes?: string;
   taxDeductions?: TaxDeductions;
-  // Sharing Features
+  // Added properties for sharing functionality
   isPublicProfile?: boolean;
-  shareSlug?: string;
   sharedWithEmails?: string[];
 }
 
