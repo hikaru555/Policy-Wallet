@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Policy, UserProfile, CoverageType, PaymentFrequency, calculatePolicyStatus, UsageStats } from '../types';
 import { translations, Language } from '../translations';
@@ -154,29 +153,41 @@ const TaxOptimizationView: React.FC<TaxOptimizationViewProps> = ({ policies, pro
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-          <div>
-            <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.taxTitle}</h3>
-            <p className="text-slate-500 text-sm mt-1">{t.taxSubtitle}</p>
+      <div className="bg-white p-6 sm:p-10 lg:p-12 rounded-[2.5rem] md:rounded-[3rem] shadow-sm border border-slate-100 max-w-[1400px] mx-auto">
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row justify-between items-center lg:items-center gap-8 mb-12 pb-10 border-b border-slate-50">
+          <div className="flex-1 text-center lg:text-left space-y-4">
+            <div>
+              <h3 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight leading-none">{t.taxTitle}</h3>
+              <p className="text-base sm:text-lg text-slate-500 leading-relaxed max-w-2xl font-medium mt-3">
+                {t.taxSubtitle}
+              </p>
+            </div>
+            
+            {/* Usage Indicator: Consistent with Gap Analysis */}
+            <div className="flex justify-center lg:justify-start">
+              <div className="px-5 py-2.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
+                <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">{t.remainingUsage}:</span>
+                <span className={`text-sm sm:text-base font-black tracking-tight ${remaining > 0 ? 'text-indigo-600' : 'text-rose-500'}`}>
+                  {isPro ? t.unlimited : `${remaining} / ${MAX_AI_USAGE}`}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col items-end gap-3">
+          
+          <div className="w-full lg:w-auto flex-shrink-0">
             <button 
               onClick={handleRunAiTax}
               disabled={loading || (!isPro && remaining <= 0)}
-              className={`px-8 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 
-                ${(!isPro && remaining <= 0) ? 'bg-slate-800 text-slate-300' : 'bg-indigo-600 text-white'}`}
+              className="w-full lg:w-auto px-10 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[2rem] transition-all font-black text-lg shadow-2xl shadow-indigo-100 hover:shadow-indigo-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 hover:-translate-y-1"
             >
-              {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
-              {t.optimizeNow}
+              {loading ? (
+                <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <span className="text-2xl">⚡</span>
+              )}
+              <span>{loading ? t.processing : t.optimizeNow}</span>
             </button>
-            
-            <div className="px-3 py-1 bg-slate-50 rounded-lg border border-slate-100">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest mr-2">{t.remainingUsage}:</span>
-              <span className={`text-[11px] font-black ${remaining > 0 ? 'text-indigo-600' : 'text-rose-500'}`}>
-                {isPro ? t.unlimited : `${remaining} / ${MAX_AI_USAGE}`}
-              </span>
-            </div>
           </div>
         </div>
 

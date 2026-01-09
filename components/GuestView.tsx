@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Policy, UserProfile, CoverageType, calculatePolicyStatus } from '../types';
 import { translations, Language } from '../translations';
@@ -101,15 +100,16 @@ const GuestView: React.FC<GuestViewProps> = ({ policies, profile, lang }) => {
                   </div>
                 </div>
 
-                <div className="h-[300px] w-full relative">
+                <div className="relative h-[250px] md:h-[300px] w-full max-w-[320px] mx-auto lg:max-w-none">
                   {chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie 
                           data={chartData} 
                           cx="50%" cy="50%" 
-                          innerRadius={75} outerRadius={105} 
-                          paddingAngle={8} 
+                          innerRadius="60%" 
+                          outerRadius="90%" 
+                          paddingAngle={0} 
                           dataKey="value"
                           stroke="none"
                           animationBegin={200}
