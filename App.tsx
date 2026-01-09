@@ -38,7 +38,7 @@ const AppLogo = ({ className = "", id = "main" }: { className?: string, id?: str
 );
 
 const App: React.FC = () => {
-  const [lang, setLang] = useState<Language>('en');
+  const [lang, setLang] = useState<Language>('th');
   const [user, setUser] = useState<User | null>(() => storageManager.load<User | null>(STORAGE_KEYS.SESSION, null));
   
   const t = translations[lang];
@@ -78,10 +78,8 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUser(null);
-    storageManager.wipeAll();
-    setPolicies([]);
-    setProfile(null);
-    setProtectionScore(null);
+    // Persist data by only clearing the session token, not the whole wallet
+    storageManager.clearSession();
     setActiveTab('overview');
     setIsMobileMenuOpen(false);
   };

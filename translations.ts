@@ -154,13 +154,20 @@ export const translations = {
     underwritingConsult: "Discuss risk with Patrick",
     underwritingConsultDesc: "Professional verification for your medical risk.",
     underwritingDisclaimerTitle: "Pre-Underwriting Disclaimer",
-    underwritingDisclaimerBody: "This AI-generated assessment is for preliminary information only and does not constitute a legal guarantee of final insurance approval. All final decisions are subject to the official underwriting policies and procedures of your selected insurance provider."
+    underwritingDisclaimerBody: "This AI-generated assessment is for preliminary information only and does not constitute a legal guarantee of final insurance approval. All final decisions are subject to the official underwriting policies and procedures of your selected insurance provider.",
+    memberPlan: "Member Plan",
+    proPlan: "Pro Plan",
+    unlimited: "Unlimited",
+    company: "Company",
+    planName: "Plan Name",
+    premium: "Premium",
+    dueDateLabel: "Due Date"
   },
   th: {
-    appName: "Policy Wallet",
+    appName: "คลังกรมธรรม์อัจฉริยะ",
     overview: "ภาพรวม",
     policies: "กรมธรรม์ของฉัน",
-    analysis: "วิเคราะห์ช่องว่าง AI",
+    analysis: "วิเคราะห์ความเสี่ยง",
     tax: "วางแผนภาษี",
     profile: "ข้อมูลผู้ใช้",
     vault: "คลังเอกสาร",
@@ -186,7 +193,7 @@ export const translations = {
     substandard: "เพิ่มเบี้ย/ยกเว้นโรค (Sub-standard)",
     postpone: "เลื่อนการพิจารณา (Postpone)",
     decline: "ปฏิเสธการรับประกัน (Decline)",
-    welcomeBack: "ยินดีต้อนรับกลับ,",
+    welcomeBack: "ยินดีต้อนับกลับ,",
     shareReport: "แชร์รายงาน",
     addPolicy: "เพิ่มกรมธรรม์",
     cancel: "ยกเลิก",
@@ -308,6 +315,13 @@ export const translations = {
     underwritingConsult: "ปรึกษาความเสี่ยงกับคุณแพททริค",
     underwritingConsultDesc: "รับการยืนยันจากผู้เชี่ยวชาญเกี่ยวกับประวัติสุขภาพของคุณ",
     underwritingDisclaimerTitle: "ข้อความปฏิเสธความรับผิดชอบ",
-    underwritingDisclaimerBody: "การประเมินโดย AI นี้เป็นเพียงข้อมูลเบื้องต้นและไม่มีผลผูกพันทางกฎหมายในการอนุมัติรับประกันภัย การตัดสินใจขั้นสุดท้ายขึ้นอยู่กับเงื่อนไขและการพิจารณาของบริษัทประกันภัยแต่ละแห่ง"
+    underwritingDisclaimerBody: "การประเมินโดย AI นี้เป็นเพียงข้อมูลเบื้องต้นและไม่มีผลผูกพันทางกฎหมายในการอนุมัติรับประกันภัย การตัดสินใจขั้นสุดท้ายขึ้นอยู่กับเงื่อนไขและการพิจารณาของบริษัทประกันภัยแต่ละแห่ง",
+    memberPlan: "สมาชิกทั่วไป",
+    proPlan: "สมาชิก Pro",
+    unlimited: "ไม่จำกัด",
+    company: "บริษัท",
+    planName: "ชื่อแผน",
+    premium: "เบี้ยประกัน",
+    dueDateLabel: "วันครบกำหนด"
   }
 };

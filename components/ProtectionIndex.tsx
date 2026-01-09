@@ -36,21 +36,17 @@ const ProtectionIndex: React.FC<ProtectionIndexProps> = ({ score, onRunAnalysis,
       </div>
       
       <div className="w-full space-y-4">
-        {/* Horizontal Bar Gauge */}
         <div className="relative pt-4 pb-2">
-          {/* Labels above the bar */}
           <div className="flex justify-between w-full px-1 mb-2">
             <span className="text-[8px] font-black text-rose-500 uppercase tracking-tighter">{lang === 'en' ? 'Poor' : 'ควรปรับปรุง'}</span>
             <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">{lang === 'en' ? 'Moderate' : 'ปานกลาง'}</span>
             <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">{lang === 'en' ? 'Excellence' : 'ดีเยี่ยม'}</span>
           </div>
 
-          {/* Gauge Track */}
           <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden relative p-[2px]">
              <div className="h-full w-full rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 opacity-90"></div>
           </div>
 
-          {/* Pointer/Needle */}
           <div 
             className="absolute top-6 bottom-0 w-1 bg-slate-900 shadow-xl transition-all duration-1000 ease-out z-10 rounded-full"
             style={{ 
@@ -72,7 +68,7 @@ const ProtectionIndex: React.FC<ProtectionIndexProps> = ({ score, onRunAnalysis,
               </p>
             </div>
           ) : (
-            <p className="text-slate-400 text-xs font-medium animate-pulse">Pending Analysis...</p>
+            <p className="text-slate-400 text-xs font-medium animate-pulse">{lang === 'en' ? 'Pending Analysis...' : 'กำลังรอการวิเคราะห์...'}</p>
           )}
         </div>
       </div>
@@ -81,10 +77,9 @@ const ProtectionIndex: React.FC<ProtectionIndexProps> = ({ score, onRunAnalysis,
         onClick={onRunAnalysis}
         className="w-full mt-6 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all border border-indigo-100 active:scale-[0.98]"
       >
-        {score !== null ? 'Re-run AI Analysis' : t.runAnalysis}
+        {score !== null ? (lang === 'en' ? 'Re-run AI Analysis' : 'เริ่มวิเคราะห์ใหม่อีกครั้ง') : t.runAnalysis}
       </button>
 
-      {/* Decorative background element */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
     </div>
   );

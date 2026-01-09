@@ -10,7 +10,25 @@ interface DashboardProps {
   lang: Language;
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+// Function to map CoverageType to specific colors consistent with summary cards
+const getCoverageColor = (type: string): string => {
+  switch (type) {
+    case CoverageType.LIFE:
+    case CoverageType.SAVINGS:
+    case CoverageType.PENSION:
+      return '#2563eb'; // blue-600 (Matches Sum Assured Card)
+    case CoverageType.HOSPITAL_BENEFIT:
+      return '#ec4899'; // pink-500 (Matches Hospital Benefit Card)
+    case CoverageType.HEALTH:
+      return '#059669'; // emerald-600 (Matches Room Rate Card)
+    case CoverageType.ACCIDENT:
+      return '#f59e0b'; // amber-500
+    case CoverageType.CRITICAL:
+      return '#f43f5e'; // rose-500
+    default:
+      return '#64748b'; // slate-500
+  }
+};
 
 const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) => {
   const t = translations[lang];
@@ -48,8 +66,9 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
   });
 
   const chartData = Array.from(coverageDataMap.entries()).map(([name, value]) => ({
-    name,
-    value
+    name: name,
+    value,
+    color: getCoverageColor(name)
   })).filter(d => d.value > 0);
 
   const getFreqLabel = (f: PaymentFrequency) => {
@@ -103,11 +122,11 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.hospitalBenefit}</p>
-          <h3 className="text-2xl font-black text-pink-500 mt-1">฿{totalHospitalBenefit.toLocaleString()} <span className="text-xs font-medium text-slate-400">/day</span></h3>
+          <h3 className="text-2xl font-black text-pink-500 mt-1">฿{totalHospitalBenefit.toLocaleString()} <span className="text-xs font-medium text-slate-400">/{lang === 'en' ? 'day' : 'วัน'}</span></h3>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.dailyRoomRate}</p>
-          <h3 className="text-2xl font-black text-emerald-600 mt-1">฿{totalRoomRate.toLocaleString()} <span className="text-xs font-medium text-slate-400">/day</span></h3>
+          <h3 className="text-2xl font-black text-emerald-600 mt-1">฿{totalRoomRate.toLocaleString()} <span className="text-xs font-medium text-slate-400">/{lang === 'en' ? 'day' : 'วัน'}</span></h3>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{t.annualPremium}</p>
@@ -119,7 +138,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[400px] flex flex-col">
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-bold text-lg">{t.coverageDist}</h4>
-            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-1 rounded-full font-bold uppercase tracking-widest">Active Only</span>
+            <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-1 rounded-full font-bold uppercase tracking-widest">{lang === 'en' ? 'Active Only' : 'เฉพาะที่คุ้มครอง'}</span>
           </div>
           
           {chartData.length > 0 ? (
@@ -139,7 +158,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                       animationDuration={800}
                     >
                       {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip 
@@ -155,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                   <div key={entry.name} className="flex items-center space-x-2">
                     <div 
                       className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }} 
+                      style={{ backgroundColor: entry.color }} 
                     />
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-semibold text-slate-700 truncate">{entry.name}</span>
@@ -170,7 +189,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 opacity-40">
               <span className="text-6xl">🥧</span>
-              <p className="text-sm font-medium">Add active policies to view coverage distribution chart</p>
+              <p className="text-sm font-medium">{lang === 'en' ? 'Add active policies to view coverage distribution chart' : 'เพิ่มกรมธรรม์ที่มีผลคุ้มครองเพื่อดูแผนภูมิสัดส่วน'}</p>
             </div>
           )}
         </div>
@@ -189,7 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
           <div className="space-y-4 flex-1">
             {policies.length === 0 ? (
               <div className="text-center py-24 text-slate-400 italic text-sm border-2 border-dashed border-slate-100 rounded-2xl">
-                No policies found to track renewals
+                {lang === 'en' ? 'No policies found to track renewals' : 'ไม่พบข้อมูลกรมธรรม์เพื่อติดตามการต่ออายุ'}
               </div>
             ) : (
               policies

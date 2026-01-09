@@ -49,7 +49,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.onerror = () => {
-      alert("Failed to read file.");
+      alert(lang === 'en' ? "Failed to read file." : "อ่านไฟล์ล้มเหลว");
       setIsUploading(false);
     };
     reader.readAsDataURL(file);
@@ -77,15 +77,10 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-xl">
             <div className={`inline-flex items-center px-3 py-1 ${isPro ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'} rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 border`}>
-              <span className="mr-1">{isPro ? '✅' : '⭐'}</span> {isPro ? 'PRO VERSION ACTIVE' : t.proFeature}
+              <span className="mr-1">{isPro ? '✅' : '⭐'}</span> {isPro ? (lang === 'en' ? 'PRO VERSION ACTIVE' : 'สิทธิ์สมาชิก PRO ทำงานแล้ว') : t.proFeature}
             </div>
             <h3 className="text-3xl font-bold mb-3">{t.vaultTitle}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? 'Enjoy access to your local encrypted insurance document storage.' : t.proDesc}</p>
-          </div>
-          <div className="hidden lg:block">
-             <div className="w-32 h-32 bg-slate-700/50 rounded-3xl flex items-center justify-center text-6xl shadow-inner border border-slate-600/50">
-               {isPro ? '🛡️' : '🔒'}
-             </div>
+            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? (lang === 'en' ? 'Enjoy access to your local encrypted insurance document storage.' : 'จัดการเอกสารกรมธรรม์แบบเข้ารหัสในเครื่องของคุณได้อย่างอิสระ') : t.proDesc}</p>
           </div>
         </div>
       </div>
@@ -124,9 +119,9 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
               <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-bold">
                 <tr>
                   <th className="px-6 py-3">{t.docCategory}</th>
-                  <th className="px-6 py-3">File Name</th>
+                  <th className="px-6 py-3">{lang === 'en' ? 'File Name' : 'ชื่อไฟล์'}</th>
                   <th className="px-6 py-3">{t.companyPlan}</th>
-                  <th className="px-6 py-3">Storage Status</th>
+                  <th className="px-6 py-3">{lang === 'en' ? 'Storage Status' : 'สถานะการจัดเก็บ'}</th>
                   <th className="px-6 py-3 text-right">{t.action}</th>
                 </tr>
               </thead>
@@ -139,7 +134,9 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                         doc.category === 'Receipt' ? 'bg-emerald-100 text-emerald-700' :
                         'bg-slate-100 text-slate-700'
                       }`}>
-                        {doc.category}
+                        {doc.category === 'Policy' ? t.policyDoc : 
+                         doc.category === 'Receipt' ? t.receiptDoc : 
+                         doc.category === 'Medical' ? t.medicalDoc : t.otherDoc}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -154,7 +151,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-1.5">
                         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">Local Storage</span>
+                        <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">{lang === 'en' ? 'Local Storage' : 'เก็บในเครื่องนี้'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -192,7 +189,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                   <option value="Other">{t.otherDoc}</option>
                 </select>
                 <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`w-full py-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center ${isUploading ? 'bg-slate-50' : 'bg-blue-50/50 hover:bg-blue-50'}`}>
-                  {isUploading ? <div className="animate-spin w-8 h-8 border-4 border-t-blue-600 rounded-full" /> : <><div className="text-3xl">📤</div><span className="text-xs font-bold text-blue-600">Select File</span></>}
+                  {isUploading ? <div className="animate-spin w-8 h-8 border-4 border-t-blue-600 rounded-full" /> : <><div className="text-3xl">📤</div><span className="text-xs font-bold text-blue-600">{lang === 'en' ? 'Select File' : 'เลือกไฟล์'}</span></>}
                 </button>
               </div>
               <div className="mt-8 flex justify-center"><button onClick={() => setShowUploadModal(false)} disabled={isUploading} className="text-sm font-bold text-slate-500">{t.cancel}</button></div>

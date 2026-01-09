@@ -57,7 +57,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose
               </span>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Premium ({getFreqLabel(policy.frequency)})</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{t.premium} ({getFreqLabel(policy.frequency)})</p>
               <p className="text-xl font-bold text-amber-600">฿{policy.premiumAmount.toLocaleString()}</p>
             </div>
           </div>
@@ -71,7 +71,9 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose
               {policy.coverages.map((c, idx) => (
                 <div key={idx} className="flex justify-between items-start p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <div>
-                    <p className="font-bold text-slate-800 text-sm">{c.type}</p>
+                    <p className="font-bold text-slate-800 text-sm">
+                      {c.type}
+                    </p>
                     {c.roomRate && <p className="text-[10px] text-slate-500">{t.dailyRoomRate}: ฿{c.roomRate.toLocaleString()}</p>}
                   </div>
                   <p className="font-bold text-blue-600 text-sm">฿{c.sumAssured.toLocaleString()}</p>
@@ -128,7 +130,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose
 
           <div className="grid grid-cols-1 gap-6">
             <div className="p-4 bg-slate-50 rounded-2xl">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Next Payment Date</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{t.dueDateLabel}</p>
               <p className="text-xl font-bold text-slate-800">{new Date(policy.dueDate).toLocaleDateString()}</p>
             </div>
           </div>

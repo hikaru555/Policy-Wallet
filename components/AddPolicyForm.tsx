@@ -1,13 +1,17 @@
+
 import React, { useState } from 'react';
 import { CoverageType, Policy, PaymentFrequency } from '../types';
 import { INSURANCE_COMPANIES } from '../constants';
+import { translations, Language } from '../translations';
 
 interface AddPolicyFormProps {
   onAdd: (policy: Policy) => void;
   onCancel: () => void;
+  lang: Language;
 }
 
-const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
+const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel, lang }) => {
+  const t = translations[lang];
   const [formData, setFormData] = useState({
     company: INSURANCE_COMPANIES[0],
     planName: '',
@@ -22,13 +26,13 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.planName || !formData.sumAssured || !formData.premiumAmount || !formData.dueDate) {
-      alert("Please fill in all required fields.");
+      alert(lang === 'en' ? "Please fill in all required fields." : "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
       return;
     }
 
     const premium = Number(formData.premiumAmount);
     if (premium < 0) {
-      alert("Premium cannot be negative.");
+      alert(lang === 'en' ? "Premium cannot be negative." : "จำนวนเบี้ยประกันไม่สามารถเป็นค่าลบได้");
       return;
     }
 
@@ -66,10 +70,10 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 animate-in slide-in-from-top-2 duration-300">
-      <h4 className="font-bold text-lg mb-4">Add New Policy</h4>
+      <h4 className="font-bold text-lg mb-4">{t.addPolicy}</h4>
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Insurance Company</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.company}</label>
           <select
             className={inputClasses}
             value={formData.company}
@@ -81,7 +85,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Plan Name</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.planName}</label>
           <input
             type="text"
             placeholder="e.g. Life Shield Plus"
@@ -91,19 +95,21 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Coverage Type</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.coverageType}</label>
           <select
             className={inputClasses}
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value as CoverageType })}
           >
             {Object.values(CoverageType).map((type) => (
-              <option key={type} value={type}>{type}</option>
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Sum Assured (฿)</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.sumAssured} (฿)</label>
           <input
             type="number"
             min="0"
@@ -114,7 +120,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Room Rate (฿) - Optional</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.dailyRoomRate} (฿) - {lang === 'en' ? 'Optional' : 'ไม่บังคับ'}</label>
           <input
             type="number"
             min="0"
@@ -125,7 +131,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium Amount (฿)</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.premium} (฿)</label>
           <input
             type="number"
             min="0"
@@ -137,7 +143,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Frequency</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.frequency}</label>
           <select
             className={inputClasses}
             value={formData.frequency}
@@ -149,7 +155,7 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.dueDateLabel}</label>
           <input
             type="date"
             className={inputClasses}
@@ -163,13 +169,13 @@ const AddPolicyForm: React.FC<AddPolicyFormProps> = ({ onAdd, onCancel }) => {
             onClick={onCancel}
             className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
           >
-            Cancel
+            {t.cancel}
           </button>
           <button
             type="submit"
             className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
           >
-            Save Policy
+            {t.save}
           </button>
         </div>
       </form>

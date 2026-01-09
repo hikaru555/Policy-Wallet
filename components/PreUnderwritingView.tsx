@@ -21,7 +21,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
   const [result, setResult] = useState<UnderwritingResult | null>(null);
   const [usage, setUsage] = useState<UsageStats>(storageManager.getUnderwritingUsage());
 
-  const MAX_USAGE = 10;
+  const MAX_USAGE = 5;
   const remaining = isPro ? Infinity : Math.max(0, MAX_USAGE - usage.count);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
@@ -101,19 +101,30 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-      {/* Input Section */}
       <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
         <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-10 border-b border-slate-50 pb-8">
           <div>
-            <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.underwritingTitle}</h3>
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.underwritingTitle}</h3>
+              <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${isPro ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                {isPro ? t.proPlan : t.memberPlan}
+              </div>
+            </div>
             <p className="text-slate-500 text-sm mt-1">{t.underwritingDesc}</p>
           </div>
-          {!isPro && (
-            <div className="px-5 py-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.remainingUsage}</p>
-              <p className="text-xl font-black text-slate-800">{remaining} / {MAX_USAGE}</p>
-            </div>
-          )}
+          <div className="px-5 py-3 bg-slate-50 rounded-2xl border border-slate-100 text-center min-w-[140px]">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.remainingUsage}</p>
+            {isPro ? (
+              <p className="text-xl font-black text-emerald-600">{t.unlimited}</p>
+            ) : (
+              <div>
+                <p className="text-xl font-black text-slate-800">{remaining} / {MAX_USAGE}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">
+                  {lang === 'en' ? `Used ${usage.count} times today` : `วันนี้ใช้งานแล้ว ${usage.count} ครั้ง`}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -135,7 +146,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                   onClick={() => fileInputRef.current?.click()}
                   className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-4 py-2 rounded-xl transition-all hover:bg-indigo-100"
                 >
-                  + Add Files
+                  + {lang === 'en' ? 'Add Files' : 'เพิ่มไฟล์'}
                 </button>
               </div>
               <input 
@@ -159,7 +170,7 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                 ))}
                 {attachedFiles.length === 0 && (
                   <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-100 rounded-3xl text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50/30">
-                    No records attached
+                    {lang === 'en' ? 'No records attached' : 'ไม่มีเอกสารแนบ'}
                   </div>
                 )}
               </div>
@@ -177,7 +188,6 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
             </div>
           </div>
 
-          {/* Guideline Section */}
           <div className="lg:col-span-4 space-y-6">
             <div className="p-6 bg-indigo-50/50 border border-indigo-100 rounded-[2rem] space-y-4">
               <div className="flex items-center gap-3 mb-2">
@@ -199,19 +209,10 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                 </li>
               </ul>
             </div>
-            
-            <div className="p-6 bg-slate-50 border border-slate-100 rounded-[2rem]">
-               <p className="text-[10px] font-bold text-slate-400 leading-relaxed italic">
-                 {lang === 'en' 
-                   ? "Detailed info leads to higher precision in AI risk prediction." 
-                   : "การระบุข้อมูลที่ละเอียดช่วยให้ AI ประเมินความเสี่ยงได้แม่นยำยิ่งขึ้น"}
-               </p>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Result Section */}
       <div ref={resultRef} className="animate-in slide-in-from-bottom-6 duration-700">
         {result ? (
           <div className="space-y-8">
@@ -224,24 +225,17 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                 </div>
               </div>
 
-              {/* Major Risk Card */}
               <div className={`p-10 rounded-[2.5rem] border ${getRiskColor(result.riskLevel)} transition-all shadow-md mb-12`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                   <div className="space-y-1">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60">{t.riskLevel}</span>
                     <h4 className="text-3xl font-black tracking-tight">{getRiskLabel(result.riskLevel)}</h4>
                   </div>
-                  <div className="hidden md:block">
-                     <div className="w-16 h-16 rounded-full bg-white/40 flex items-center justify-center text-3xl">
-                        {result.riskLevel === 'Standard' ? '✅' : result.riskLevel === 'Sub-standard' ? '⚠️' : result.riskLevel === 'Postpone' ? '⏳' : '❌'}
-                     </div>
-                  </div>
                 </div>
                 <div className="h-px bg-current opacity-10 mb-8" />
                 <p className="text-lg md:text-xl font-bold leading-relaxed">{result.assessment}</p>
               </div>
 
-              {/* Analysis Details Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 px-1">
@@ -278,7 +272,6 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                     </div>
                   )}
 
-                  {/* Minimal Horizontal Consultant CTA */}
                   <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex flex-col space-y-5">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-2xl flex-shrink-0">🧔</div>
@@ -293,9 +286,6 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
                       onClick={() => window.open('https://line.me/ti/p/@patrickfwd', '_blank')}
                       className="w-full py-3.5 bg-[#00B900] hover:bg-[#00a300] text-white rounded-2xl font-black text-xs shadow-lg shadow-green-100/50 transition-all active:scale-[0.98] flex items-center justify-center gap-2.5"
                     >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M24 10.304c0-5.231-5.383-9.486-12-9.486s-12 4.255-12 9.486c0 4.69 4.27 8.602 10.046 9.324.391.084.922.258 1.057.592.121.303.079.777.039 1.083l-.171 1.027c-.052.312-.252 1.22 1.085.666 1.336-.554 7.21-4.246 9.837-7.269 1.832-1.995 2.107-3.818 2.107-5.423z"/>
-                      </svg>
                       <span>{t.connectLine}</span>
                     </button>
                   </div>
@@ -306,9 +296,9 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
         ) : (
           <div className="bg-white p-16 rounded-[3rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-center opacity-40">
             <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-5xl mb-8 animate-pulse shadow-inner">🤖</div>
-            <p className="text-base font-black text-slate-900 uppercase tracking-widest mb-3">Awaiting Medical Context</p>
+            <p className="text-base font-black text-slate-900 uppercase tracking-widest mb-3">{lang === 'en' ? 'Awaiting Medical Context' : 'รอข้อมูลประวัติสุขภาพ'}</p>
             <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-[320px]">
-              Describe your health history and upload any available records to receive your AI underwriting risk assessment.
+              {lang === 'en' ? 'Describe your health history and upload any available records to receive your AI underwriting risk assessment.' : 'ระบุประวัติสุขภาพของคุณและอัปโหลดเอกสารที่มีเพื่อให้ AI ประเมินความเสี่ยงในการรับประกัน'}
             </p>
           </div>
         )}

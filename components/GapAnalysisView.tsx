@@ -27,7 +27,7 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
         onAnalysisComplete(res.score);
       }
     } catch (e) {
-      alert("Failed to run analysis.");
+      alert(lang === 'en' ? "Failed to run analysis." : "การวิเคราะห์ล้มเหลว โปรดลองอีกครั้ง");
     } finally {
       setLoading(false);
     }
@@ -39,18 +39,11 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
     return '#f43f5e'; // rose-500
   };
 
-  const getScoreStatus = (score: number) => {
-    if (score >= 80) return lang === 'en' ? 'Excellence' : 'ดีเยี่ยม';
-    if (score >= 50) return lang === 'en' ? 'Moderate' : 'ปานกลาง';
-    return lang === 'en' ? 'Poor' : 'ควรปรับปรุง';
-  };
-
   const handleConsultExpert = () => {
     window.open('https://line.me/ti/p/@patrickfwd', '_blank');
   };
 
   const activeCount = policies.filter(p => calculatePolicyStatus(p.dueDate) !== 'Terminated').length;
-
   const displayScore = result?.score || 0;
 
   return (
@@ -58,7 +51,11 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 pb-6 border-b border-slate-50">
         <div>
           <h4 className="font-bold text-2xl text-slate-800">{t.analysis}</h4>
-          <p className="text-sm text-slate-500 mt-1">Smart portfolio review based on your profile and {activeCount} active policies.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            {lang === 'en' 
+              ? `Smart portfolio review based on your profile and ${activeCount} active policies.` 
+              : `วิเคราะห์พอร์ตอัจฉริยะตามข้อมูลของคุณและกรมธรรม์ที่มีผลคุ้มครอง ${activeCount} ฉบับ`}
+          </p>
         </div>
         <button
           onClick={handleRunAnalysis}
@@ -75,9 +72,9 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
             <span className="text-5xl animate-bounce">🤖</span>
           </div>
-          <h5 className="font-bold text-slate-800 text-lg mb-2">Ready for Intelligent Analysis</h5>
+          <h5 className="font-bold text-slate-800 text-lg mb-2">{lang === 'en' ? 'Ready for Intelligent Analysis' : 'พร้อมสำหรับการวิเคราะห์อัจฉริยะ'}</h5>
           <p className="text-slate-400 max-w-sm mx-auto text-sm">
-            Our AI will evaluate your total sum assured, room rates, and critical illness coverage against your financial liabilities.
+            {lang === 'en' ? 'Our AI will evaluate your total sum assured, room rates, and critical illness coverage against your financial liabilities.' : 'AI ของเราจะประเมินทุนประกันรวม ค่าห้อง และความคุ้มครองโรคร้ายแรงเทียบกับภาระทางการเงินของคุณ'}
           </p>
         </div>
       )}
@@ -97,7 +94,6 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
 
       {result && !loading && (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {/* Horizontal Bar Gauge Section */}
           <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
@@ -124,7 +120,6 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
               </div>
 
               <div className="w-full space-y-4">
-                {/* Horizontal Bar Gauge */}
                 <div className="relative pt-6">
                   <div className="flex justify-between w-full px-1 mb-3">
                     <span className="text-xs font-black text-rose-400 uppercase tracking-widest">{lang === 'en' ? 'Poor' : 'ควรปรับปรุง'}</span>
@@ -136,7 +131,6 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
                     <div className="h-full w-full rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 opacity-80 shadow-inner"></div>
                   </div>
 
-                  {/* Needle Pointer */}
                   <div 
                     className="absolute top-8 bottom-0 w-1.5 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-all duration-1500 ease-out z-10 rounded-full"
                     style={{ 
@@ -150,12 +144,7 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
                 </div>
 
                 <p className="text-slate-400 text-lg leading-relaxed mt-6 max-w-2xl">
-                  {result.score >= 80 
-                    ? (lang === 'en' ? "Excellent protection! Your current portfolio is robust and well-balanced." : "ความคุ้มครองดีเยี่ยม! พอร์ตโฟลิโอของคุณแข็งแกร่งและสมดุลเป็นอย่างดี")
-                    : result.score >= 50 
-                    ? (lang === 'en' ? "Moderate coverage. Your protection is decent but lacks specialization in key areas." : "ความคุ้มครองระดับปานกลาง มีความคุ้มครองพอสมควรแต่ยังขาดความเฉพาะเจาะจงในบางด้าน")
-                    : (lang === 'en' ? "Poor coverage detected. Urgent attention required to secure your financial future." : "พบช่องว่างความคุ้มครองที่ควรปรับปรุง ต้องการการดูแลอย่างเร่งด่วนเพื่อความมั่นคงทางการเงินของคุณ")
-                  }
+                  {result.score >= 80 ? (lang === 'en' ? 'Excellent protection! Your current portfolio is robust and well-balanced.' : 'ความคุ้มครองดีเยี่ยม! พอร์ตโฟลิโอของคุณแข็งแกร่งและสมดุลเป็นอย่างดี') : result.score >= 50 ? (lang === 'en' ? 'Moderate coverage. Your protection is decent but lacks specialization in key areas.' : 'ความคุ้มครองระดับปานกลาง มีความคุ้มครองพอสมควรแต่ยังขาดความเฉพาะเจาะจงในบางด้าน') : (lang === 'en' ? 'Poor coverage detected. Urgent attention required to secure your financial future.' : 'พบช่องว่างความคุ้มครองที่ควรปรับปรุง ต้องการการดูแลอย่างเร่งด่วนเพื่อความมั่นคงทางการเงินของคุณ')}
                 </p>
               </div>
             </div>
@@ -181,7 +170,11 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
                       <span className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-tighter shadow-sm ${
                         gap.priority === 'High' ? 'bg-rose-200 text-rose-900' : 
                         gap.priority === 'Medium' ? 'bg-amber-200 text-amber-900' : 'bg-slate-200 text-slate-900'
-                      }`}>{gap.priority}</span>
+                      }`}>
+                        {gap.priority === 'High' ? (lang === 'en' ? 'High' : 'สูง') : 
+                         gap.priority === 'Medium' ? (lang === 'en' ? 'Medium' : 'กลาง') : 
+                         (lang === 'en' ? 'Low' : 'ต่ำ')}
+                      </span>
                     </div>
                     <p className="text-sm text-slate-800 leading-relaxed font-semibold">{gap.description}</p>
                   </div>

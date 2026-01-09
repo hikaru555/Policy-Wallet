@@ -102,12 +102,41 @@ export const analyzeTaxOptimization = async (policies: Policy[], profile: UserPr
 
 export const parsePolicyDocument = async (base64Data: string, mimeType: string): Promise<Partial<Policy> | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Analyze this insurance policy and extract keys: company, planName, premiumAmount, frequency, dueDate, coverages (type, sumAssured, roomRate).`;
+  
+  const systemInstruction = `
+    You are a professional Thai Insurance Administrator and Document Auditor. 
+    Your mission is to extract structured data from Thai insurance policies (PDF/Images).
+
+    MAPPING RULES FOR 'type' (MUST MAP TO THESE EXACT STRINGS):
+    - 'Life Insurance': Look for ทุนประกันชีวิต, คุ้มครองกรณีเสียชีวิต, ทุนเริ่มต้น, มรดก.
+    - 'Health Insurance': Look for ค่ารักษาพยาบาล, ค่าแพทย์, เหมาจ่าย, OPD, IPD, คุ้มครองสุขภาพ.
+    - 'Personal Accident': Look for อุบัติเหตุ, อบ.1, อบ.2, ค่าชดเชยอุบัติเหตุ, PA.
+    - 'Critical Illness': Look for โรคร้ายแรง, กลุ่มโรค, คุ้มครอง 40-50 โรค, มะเร็ง, หัวใจ.
+    - 'Savings/Endowment': Look for สะสมทรัพย์, มีเงินคืนรายปี, ครบกำหนดสัญญา, ประกันออมทรัพย์.
+    - 'Pension/Retirement': Look for บำนาญ, ประกันเกษียณอายุ, เงินคืนหลังอายุ 55/60.
+    - 'Hospital Benefit': Look for ค่าชดเชยรายวัน, เงินชดเชยนอนโรงพยาบาล, HB, HS.
+
+    EXTRACTION DETAILS:
+    1. 'company': Standard English name (e.g., FWD, AIA, Muang Thai).
+    2. 'planName': The full plan name as shown in the policy.
+    3. 'premiumAmount': Total premium to pay (Numeric only).
+    4. 'roomRate': If you find "ค่าห้อง" or "Daily Room Rate" under health, put numeric value here.
+    5. 'dueDate': Convert Thai Buddhist Year (e.g. 2568) to CE Year (2025). Format: YYYY-MM-DD.
+  `;
+
+  const prompt = `Carefully extract data from this policy document. Prioritize accuracy in identifying the Coverage Type based on Thai terminology.`;
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: { parts: [{ inlineData: { data: base64Data.split(',')[1], mimeType: mimeType } }, { text: prompt }] },
+      contents: { 
+        parts: [
+          { inlineData: { data: base64Data.split(',')[1], mimeType: mimeType } }, 
+          { text: prompt }
+        ] 
+      },
       config: {
+        systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -115,15 +144,39 @@ export const parsePolicyDocument = async (base64Data: string, mimeType: string):
             company: { type: Type.STRING },
             planName: { type: Type.STRING },
             premiumAmount: { type: Type.NUMBER },
-            frequency: { type: Type.STRING },
-            dueDate: { type: Type.STRING },
-            coverages: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING }, sumAssured: { type: Type.NUMBER }, roomRate: { type: Type.NUMBER, nullable: true } } } }
-          }
+            frequency: { type: Type.STRING, enum: ["Monthly", "Quarterly", "Yearly"] },
+            dueDate: { type: Type.STRING, description: "Format: YYYY-MM-DD" },
+            coverages: { 
+              type: Type.ARRAY, 
+              items: { 
+                type: Type.OBJECT, 
+                properties: { 
+                  type: { 
+                    type: Type.STRING, 
+                    enum: [
+                      "Life Insurance", 
+                      "Health Insurance", 
+                      "Personal Accident", 
+                      "Critical Illness", 
+                      "Savings/Endowment", 
+                      "Pension/Retirement", 
+                      "Hospital Benefit"
+                    ] 
+                  }, 
+                  sumAssured: { type: Type.NUMBER }, 
+                  roomRate: { type: Type.NUMBER, nullable: true } 
+                },
+                required: ["type", "sumAssured"]
+              } 
+            }
+          },
+          required: ["company", "planName", "premiumAmount", "coverages"]
         }
       }
     });
     return JSON.parse(response.text.trim());
   } catch (err) {
+    console.error("AI Extraction Error:", err);
     return null;
   }
 };

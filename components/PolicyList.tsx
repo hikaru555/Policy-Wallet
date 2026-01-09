@@ -33,7 +33,9 @@ const PolicyList: React.FC<PolicyListProps> = ({ policies, onDelete, onEdit, onV
           <tbody className="divide-y divide-slate-100">
             {policies.map(p => {
               const totalSum = p.coverages.reduce((acc, c) => acc + c.sumAssured, 0);
-              const types = p.coverages.map(c => c.type).join(", ");
+              const types = p.coverages
+                .map(c => c.type)
+                .join(", ");
               const currentStatus = calculatePolicyStatus(p.dueDate);
               const hasDocs = p.documents && p.documents.length > 0;
               

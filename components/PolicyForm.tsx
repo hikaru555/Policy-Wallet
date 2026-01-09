@@ -193,7 +193,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
         {/* Basic Info Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Company</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.company}</label>
             <select 
               className={inputClasses} 
               value={basicInfo.company} 
@@ -203,7 +203,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Plan Name *</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.planName} *</label>
             <input 
               type="text" 
               placeholder="Gold Plan, Plus, etc."
@@ -214,7 +214,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Premium *</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.premium} *</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">฿</span>
               <input 
@@ -240,7 +240,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date *</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.dueDateLabel} *</label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -284,7 +284,11 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                       value={c.type} 
                       onChange={(e) => updateCoverage(idx, 'type', e.target.value as CoverageType)}
                     >
-                      {Object.values(CoverageType).map(v => <option key={v} value={v}>{v}</option>)}
+                      {Object.values(CoverageType).map(v => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
