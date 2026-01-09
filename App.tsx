@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Policy, CoverageType, UserProfile, PaymentFrequency, PolicyDocument, User, UserRole } from './types';
 import { translations, Language } from './translations';
@@ -57,8 +58,38 @@ const App: React.FC = () => {
   }, [protectionScore]);
 
   const handleLogin = (newUser: User) => {
-    storageManager.save(STORAGE_KEYS.SESSION, newUser);
-    setUser(newUser); 
+    // Update Global User Registry for Admin Console
+    const allUsers = storageManager.load<User[]>(STORAGE_KEYS.USERS, []);
+    const existingUserIndex = allUsers.findIndex(u => u.email === newUser.email);
+    
+    let updatedSessionUser = { ...newUser };
+
+    if (existingUserIndex > -1) {
+      // User exists - update stats while keeping role
+      const existingUser = allUsers[existingUserIndex];
+      const updatedUser = { 
+        ...existingUser,
+        name: newUser.name,
+        picture: newUser.picture,
+        lastLogin: new Date().toISOString(),
+        loginCount: (existingUser.loginCount || 0) + 1
+      };
+      allUsers[existingUserIndex] = updatedUser;
+      updatedSessionUser = updatedUser;
+    } else {
+      // New user - add to registry
+      const newUserInRegistry = {
+        ...newUser,
+        lastLogin: new Date().toISOString(),
+        loginCount: 1
+      };
+      allUsers.push(newUserInRegistry);
+      updatedSessionUser = newUserInRegistry;
+    }
+    
+    storageManager.save(STORAGE_KEYS.USERS, allUsers);
+    storageManager.save(STORAGE_KEYS.SESSION, updatedSessionUser);
+    setUser(updatedSessionUser); 
   };
 
   const handleLogout = () => {

@@ -110,7 +110,7 @@ export const translations = {
     snapshotDate: "Snapshot Date",
     protectionSummary: "Protection Summary",
     savingImage: "Processing image...",
-    creatorCredit: "Created by Patrick คลินิกประกัน FWD",
+    creatorCredit: "The person who created is Patrick คลินิกประกัน FWD - Policy Wallet",
     pension: "Pension/Retirement",
     savings: "Savings/Endowment",
     health: "Health Insurance",
@@ -209,7 +209,6 @@ export const translations = {
     addActivePolicies: "Add active policies to view distribution.",
     alreadySettledThb: "Already Settled (THB)",
     totalTaxDeduction: "Total Tax Deduction",
-    // Missing translations for Sharing and Guest views
     publicViewTitle: "Insurance Portfolio Snapshot",
     publicViewDesc: "Viewing the active insurance summary for",
     viewPersonalWallet: "Create My Wallet",
@@ -219,7 +218,10 @@ export const translations = {
     copyLink: "Copy Link",
     qrCode: "QR Code",
     linkCopied: "Link Copied to Clipboard",
-    trustedContacts: "Trusted Contacts"
+    trustedContacts: "Trusted Contacts",
+    linkWithPolicy: "Select Policy to Link",
+    selectCategory: "Document Category",
+    policyNumber: "Policy Number"
   },
   th: {
     appName: "คลังกรมธรรม์อัจฉริยะ",
@@ -329,7 +331,7 @@ export const translations = {
     snapshotDate: "ข้อมูล ณ วันที่",
     protectionSummary: "สรุปความคุ้มครองประกัน",
     savingImage: "กำลังประมวลผล...",
-    creatorCredit: "สร้างโดย Patrick คลินิกประกัน FWD",
+    creatorCredit: "The person who created is Patrick คลินิกประกัน FWD - Policy Wallet",
     pension: "ประกันบำนาญ",
     savings: "ประกันออมทรัพย์",
     health: "ประกันสุขภาพ",
@@ -428,7 +430,6 @@ export const translations = {
     addActivePolicies: "เพิ่มกรมธรรม์ที่มีผลคุ้มครองเพื่อดูแผนภูมิ",
     alreadySettledThb: "ภาษีที่ชำระแล้ว (บาท)",
     totalTaxDeduction: "ค่าลดหย่อนรวมทั้งหมด",
-    // Missing translations for Sharing and Guest views
     publicViewTitle: "สรุปข้อมูลพอร์ตประกัน",
     publicViewDesc: "กำลังดูสรุปความคุ้มครองของ",
     viewPersonalWallet: "สร้างคลังของฉัน",
@@ -438,6 +439,9 @@ export const translations = {
     copyLink: "คัดลอกลิงก์",
     qrCode: "คิวอาร์โค้ด",
     linkCopied: "คัดลอกลิงก์เรียบร้อยแล้ว",
-    trustedContacts: "ผู้ติดต่อที่เชื่อถือได้"
+    trustedContacts: "ผู้ติดต่อที่เชื่อถือได้",
+    linkWithPolicy: "เลือกกรมธรรม์เพื่อจับคู่เอกสาร",
+    selectCategory: "หมวดหมู่เอกสาร",
+    policyNumber: "เลขกรมธรรม์"
   }
 };

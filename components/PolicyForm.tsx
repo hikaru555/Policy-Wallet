@@ -20,6 +20,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   const [basicInfo, setBasicInfo] = useState({
     company: INSURANCE_COMPANIES[0],
     planName: '',
+    policyNumber: '',
     premiumAmount: '',
     dueDate: '',
     frequency: PaymentFrequency.YEARLY,
@@ -47,6 +48,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
       setBasicInfo({
         company: initialPolicy.company,
         planName: initialPolicy.planName,
+        policyNumber: initialPolicy.policyNumber || '',
         premiumAmount: formatWithCommas(initialPolicy.premiumAmount.toString()),
         dueDate: initialPolicy.dueDate,
         frequency: initialPolicy.frequency || PaymentFrequency.YEARLY,
@@ -101,6 +103,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
         setBasicInfo({
           company: extractedData.company || INSURANCE_COMPANIES[0],
           planName: extractedData.planName || '',
+          policyNumber: extractedData.policyNumber || '',
           premiumAmount: formatWithCommas(extractedData.premiumAmount?.toString() || ''),
           dueDate: extractedData.dueDate || '',
           frequency: (extractedData.frequency as PaymentFrequency) || PaymentFrequency.YEARLY,
@@ -137,6 +140,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
       id: initialPolicy?.id || Math.random().toString(36).substr(2, 9),
       company: basicInfo.company,
       planName: basicInfo.planName,
+      policyNumber: basicInfo.policyNumber,
       premiumAmount: premium,
       dueDate: basicInfo.dueDate,
       frequency: basicInfo.frequency,
@@ -182,6 +186,10 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.planName} *</label>
             <input type="text" placeholder="Gold Plan, Plus, etc." className={inputClasses} value={basicInfo.planName} onChange={(e) => setBasicInfo({ ...basicInfo, planName: e.target.value })} required />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.policyNumber}</label>
+            <input type="text" placeholder="XXXXXXXXX" className={inputClasses} value={basicInfo.policyNumber} onChange={(e) => setBasicInfo({ ...basicInfo, policyNumber: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.premium} *</label>

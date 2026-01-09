@@ -23,6 +23,8 @@ export interface User {
   name: string;
   picture?: string;
   role: UserRole;
+  lastLogin?: string;
+  loginCount?: number;
 }
 
 export type MaritalStatus = 'Single' | 'Married' | 'Divorced' | 'Widowed';
@@ -44,6 +46,7 @@ export interface PolicyDocument {
 
 export interface Policy {
   id: string;
+  policyNumber?: string;
   company: string;
   planName: string;
   coverages: PolicyCoverage[];

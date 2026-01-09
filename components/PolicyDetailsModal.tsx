@@ -38,6 +38,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose
             <div>
               <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">{policy.company}</p>
               <h3 className="text-2xl font-bold leading-tight">{policy.planName}</h3>
+              {policy.policyNumber && <p className="text-blue-200 text-xs font-medium tracking-wider mt-1"># {policy.policyNumber}</p>}
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfi
     const coverageDetails = p.coverages.map(c => 
       `${c.type}: Sum Assured ฿${c.sumAssured.toLocaleString()}${c.roomRate ? `, Room Rate ฿${c.roomRate.toLocaleString()}` : ''}`
     ).join(", ");
-    return `Policy [${p.planName}] from [${p.company}]: ${coverageDetails}`;
+    return `Policy [${p.planName}] ${p.policyNumber ? `(#${p.policyNumber})` : ''} from [${p.company}]: ${coverageDetails}`;
   }).join("; ");
 
   const age = new Date().getFullYear() - new Date(profile.birthDate).getFullYear();
@@ -146,6 +146,7 @@ export const parsePolicyDocument = async (base64Data: string, mimeType: string):
           properties: {
             company: { type: Type.STRING },
             planName: { type: Type.STRING },
+            policyNumber: { type: Type.STRING },
             premiumAmount: { type: Type.NUMBER },
             frequency: { type: Type.STRING, enum: ["Monthly", "Quarterly", "Yearly"] },
             dueDate: { type: Type.STRING },

@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Policy, PaymentFrequency, UserProfile, CoverageType, User, calculatePolicyStatus } from '../types';
 import { translations, Language } from '../translations';
@@ -101,6 +100,13 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
               id="capture-card"
               className="w-full max-w-[400px] aspect-[4/5] bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl border border-white/5"
             >
+              {/* Subtle Invisible/Visible Watermark Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-25deg] select-none">
+                <p className="text-[14px] font-black text-white uppercase text-center whitespace-nowrap">
+                  {t.creatorCredit}
+                </p>
+              </div>
+
               {/* Background Accents for the saved image */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -mr-32 -mt-32"></div>
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] -ml-32 -mb-32"></div>
@@ -157,7 +163,11 @@ const ShareReportModal: React.FC<ShareReportModalProps> = ({
                         <div className="w-6 h-6 bg-indigo-500 rounded-lg flex items-center justify-center text-[10px] font-black">AI</div>
                         <p className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">Verified Protection</p>
                       </div>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{t.creatorCredit}</p>
+                      <div className="text-right">
+                         <p className="text-[7px] font-bold text-slate-500 uppercase tracking-[0.1em] max-w-[150px] leading-tight opacity-70">
+                           {t.creatorCredit}
+                         </p>
+                      </div>
                    </div>
                 </div>
               </div>

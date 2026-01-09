@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { translations, Language } from '../translations';
 import { Policy, PolicyDocument, User } from '../types';
@@ -179,20 +178,26 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
             <div className="p-8">
               <h3 className="text-xl font-bold text-slate-900 mb-6">{t.uploadDoc}</h3>
               <div className="space-y-4">
-                <select className="w-full p-3 bg-slate-50 border rounded-xl" value={selectedPolicyId} onChange={(e) => setSelectedPolicyId(e.target.value)} disabled={isUploading}>
-                  {policies.map(p => <option key={p.id} value={p.id}>{p.company} - {p.planName}</option>)}
-                </select>
-                <select className="w-full p-3 bg-slate-50 border rounded-xl" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value as any)} disabled={isUploading}>
-                  <option value="Policy">{t.policyDoc}</option>
-                  <option value="Receipt">{t.receiptDoc}</option>
-                  <option value="Medical">{t.medicalDoc}</option>
-                  <option value="Other">{t.otherDoc}</option>
-                </select>
-                <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`w-full py-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center ${isUploading ? 'bg-slate-50' : 'bg-blue-50/50 hover:bg-blue-50'}`}>
-                  {isUploading ? <div className="animate-spin w-8 h-8 border-4 border-t-blue-600 rounded-full" /> : <><div className="text-3xl">📤</div><span className="text-xs font-bold text-blue-600">{lang === 'en' ? 'Select File' : 'เลือกไฟล์'}</span></>}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">{t.linkWithPolicy}</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all" value={selectedPolicyId} onChange={(e) => setSelectedPolicyId(e.target.value)} disabled={isUploading}>
+                    {policies.map(p => <option key={p.id} value={p.id}>{p.company} - {p.planName}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">{t.selectCategory}</label>
+                  <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value as any)} disabled={isUploading}>
+                    <option value="Policy">{t.policyDoc}</option>
+                    <option value="Receipt">{t.receiptDoc}</option>
+                    <option value="Medical">{t.medicalDoc}</option>
+                    <option value="Other">{t.otherDoc}</option>
+                  </select>
+                </div>
+                <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className={`w-full py-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center ${isUploading ? 'bg-slate-50 border-slate-200' : 'bg-blue-50/30 border-blue-200 hover:bg-blue-50 transition-colors'}`}>
+                  {isUploading ? <div className="animate-spin w-8 h-8 border-4 border-t-blue-600 border-blue-100 rounded-full" /> : <><div className="text-3xl mb-1">📤</div><span className="text-xs font-black text-blue-600 uppercase tracking-widest">{lang === 'en' ? 'Select File' : 'เลือกไฟล์'}</span></>}
                 </button>
               </div>
-              <div className="mt-8 flex justify-center"><button onClick={() => setShowUploadModal(false)} disabled={isUploading} className="text-sm font-bold text-slate-500">{t.cancel}</button></div>
+              <div className="mt-8 flex justify-center"><button onClick={() => setShowUploadModal(false)} disabled={isUploading} className="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest">{t.cancel}</button></div>
             </div>
           </div>
         </div>
