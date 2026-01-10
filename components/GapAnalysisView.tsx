@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { GapAnalysisResult, Policy, UserProfile, calculatePolicyStatus, UsageStats } from '../types';
 import { analyzeCoverageGaps } from '../services/geminiService';
 import { translations, Language } from '../translations';
@@ -10,9 +11,10 @@ interface GapAnalysisViewProps {
   lang: Language;
   onAnalysisComplete?: (score: number) => void;
   isPro: boolean;
+  autoRun?: boolean;
 }
 
-const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, lang, onAnalysisComplete, isPro }) => {
+const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, lang, onAnalysisComplete, isPro, autoRun }) => {
   const t = translations[lang];
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GapAnalysisResult | null>(null);
@@ -48,6 +50,13 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
     }
   };
 
+  // Automatically run analysis if triggered from another view
+  useEffect(() => {
+    if (autoRun && !loading) {
+      handleRunAnalysis();
+    }
+  }, [autoRun]);
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return '#10b981'; // emerald-500
     if (score >= 50) return '#f59e0b'; // amber-500
@@ -75,7 +84,7 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
             </p>
           </div>
           
-          {/* Moved: Usage Indicator now under the header description */}
+          {/* Usage Indicator */}
           <div className="flex justify-center lg:justify-start">
             <div className="px-5 py-2.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
               <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">{t.remainingUsage}:</span>
@@ -134,7 +143,6 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
         <div className="space-y-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
           {/* Main Hero Result Banner */}
           <div className="bg-slate-900 rounded-[3rem] lg:rounded-[4rem] p-10 lg:p-16 text-white shadow-2xl relative overflow-hidden">
-            {/* Visual Depth Accents */}
             <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-indigo-500/10 rounded-full blur-[120px] -mr-60 -mt-60 pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-blue-500/10 rounded-full blur-[120px] -ml-60 -mb-60 pointer-events-none"></div>
 
@@ -161,19 +169,16 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
 
               <div className="w-full space-y-10 pt-10">
                 <div className="relative">
-                  {/* Gauge Labels */}
                   <div className="flex justify-between w-full px-2 mb-6">
                     <span className="text-xs lg:text-sm font-black text-rose-400 uppercase tracking-[0.2em]">{lang === 'en' ? 'Poor' : 'ควรปรับปรุง'}</span>
                     <span className="text-xs lg:text-sm font-black text-amber-400 uppercase tracking-[0.2em]">{lang === 'en' ? 'Moderate' : 'ปานกลาง'}</span>
                     <span className="text-xs lg:text-sm font-black text-emerald-400 uppercase tracking-[0.2em]">{lang === 'en' ? 'Excellence' : 'ดีเยี่ยม'}</span>
                   </div>
 
-                  {/* Fluid Progress Bar */}
                   <div className="h-10 lg:h-12 w-full bg-white/5 rounded-full overflow-hidden relative p-1 border border-white/5 shadow-inner">
                     <div className="h-full w-full rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 opacity-90"></div>
                   </div>
 
-                  {/* Precise Indicator Pin */}
                   <div 
                     className="absolute top-10 lg:top-12 bottom-0 w-3 bg-white shadow-[0_0_30px_rgba(255,255,255,0.8)] transition-all duration-1500 cubic-bezier(0.2, 0.8, 0.2, 1) z-10 rounded-full"
                     style={{ 
@@ -195,7 +200,6 @@ const GapAnalysisView: React.FC<GapAnalysisViewProps> = ({ policies, profile, la
             </div>
           </div>
 
-          {/* Detailed Gaps & Recommendations Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
             {/* Gaps List */}
             <div className="space-y-12">

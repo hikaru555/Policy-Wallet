@@ -56,19 +56,22 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
     storageManager.save(STORAGE_KEYS.USERS, updatedUsers);
     
     setNotification({
-      message: lang === 'en' ? `Role updated to ${newRole}` : `อัปเดตบทความเป็น ${newRole} สำเร็จ`,
+      message: lang === 'en' ? `Role updated to ${newRole === 'Member' ? 'Normal User' : newRole === 'Pro-Member' ? 'Pro User' : newRole}` : `อัปเดตบทความเป็น ${newRole === 'Member' ? 'ผู้ใช้ทั่วไป' : newRole === 'Pro-Member' ? 'ผู้ใช้ระดับ Pro' : newRole} สำเร็จ`,
       type: 'success'
     });
 
     setTimeout(() => setNotification(null), 3000);
   };
 
-  if (currentUser.role !== 'Admin') {
+  // STRICT ACCESS CONTROL: Only phattararak@gmail.com is allowed.
+  if (currentUser.role !== 'Admin' || currentUser.email !== 'phattararak@gmail.com') {
     return (
       <div className="bg-rose-50 border border-rose-100 rounded-[2.5rem] p-12 text-center max-w-2xl mx-auto mt-10">
         <span className="text-6xl mb-6 block">🚫</span>
         <h3 className="text-2xl font-black text-rose-800 mb-2">{t.adminOnly}</h3>
-        <p className="text-rose-600 font-medium opacity-80">Unauthorized access detected. Please return to the dashboard.</p>
+        <p className="text-rose-600 font-medium opacity-80">
+          Unauthorized access detected. This console is restricted to the platform owner.
+        </p>
       </div>
     );
   }
@@ -205,7 +208,7 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
                           user.role === 'Pro-Member' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
                           'bg-slate-100 text-slate-500 border-slate-200'
                         }`}>
-                          {user.role}
+                          {user.role === 'Admin' ? 'Admin' : user.role === 'Pro-Member' ? 'Pro User' : 'Normal User'}
                         </span>
                       </div>
                     </td>
@@ -219,8 +222,8 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
                             onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                             className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-all hover:border-indigo-300"
                           >
-                            <option value="Member">Standard</option>
-                            <option value="Pro-Member">Pro Member</option>
+                            <option value="Member">Normal User</option>
+                            <option value="Pro-Member">Pro User</option>
                             <option value="Admin">Admin</option>
                           </select>
                         )}

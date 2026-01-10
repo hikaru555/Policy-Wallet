@@ -473,47 +473,39 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave, lang,
                 </div>
              </div>
 
-             {/* Smaller & Compact Actual Tax Payments Section */}
-             <div className="pt-4">
-                <div className="p-4 md:p-6 bg-indigo-950 rounded-[1.5rem] text-white shadow-2xl relative overflow-hidden group border border-white/5">
-                   <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none"></div>
-                   <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl -ml-24 -mb-24 pointer-events-none"></div>
-
-                   <div className="relative z-10 space-y-4">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1.5">
-                             <span className="text-xl bg-white/10 p-1.5 rounded-lg">🧾</span>
-                             <h5 className="text-[8px] font-black uppercase tracking-[0.2em] text-indigo-200">{t.actualTaxPayments}</h5>
-                          </div>
-                          <h4 className="text-lg font-black tracking-tight mb-1">{t.taxWithheld}</h4>
-                          <p className="text-indigo-200/60 text-[10px] max-w-md font-medium leading-tight">
-                            {lang === 'en' 
-                              ? "Tax already deducted from income or paid as prepayments."
-                              : "ยอดเงินภาษีที่ท่านได้ชำระไปแล้วในระหว่างปี (เช่น ภาษีหัก ณ ที่จ่าย)"}
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0 text-center md:text-right">
-                           <span className="text-[8px] font-black uppercase text-indigo-300 tracking-[0.15em] block mb-0.5 opacity-50">{t.alreadySettledThb}</span>
-                           <span className="text-2xl font-black tabular-nums tracking-tighter">฿{taxWithheldStr || '0'}</span>
-                        </div>
-                      </div>
-
-                      <div className="max-w-md">
-                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-lg font-black">฿</span>
-                            <input 
-                               type="text" 
-                               inputMode="decimal" 
-                               placeholder={lang === 'en' ? "Total tax paid..." : "ยอดรวมภาษีที่จ่ายแล้ว..."}
-                               className="w-full p-2.5 pl-8 bg-white/10 border border-white/10 rounded-lg text-base font-black text-white placeholder:text-white/20 focus:ring-2 focus:ring-white/5 focus:border-white/20 outline-none transition-all shadow-inner" 
-                               value={taxWithheldStr} 
-                               onChange={handleNumericChange(setTaxWithheldStr)} 
-                               onFocus={() => handleFocus(taxWithheldStr, setTaxWithheldStr)}
-                            />
-                         </div>
-                      </div>
-                   </div>
+             {/* Restyled Actual Tax Payments Section to match others */}
+             <div className="p-8 bg-slate-50/50 border border-slate-100 rounded-[2rem] space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <h5 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2.5">
+                    <span className="text-xl">🧾</span> {t.actualTaxPayments}
+                  </h5>
+                  <div className="text-right">
+                     <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.15em] block mb-0.5 opacity-70">{t.alreadySettledThb}</span>
+                     <span className="text-2xl font-black tabular-nums tracking-tighter text-slate-900">฿{taxWithheldStr || '0'}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClasses}>{t.taxWithheld}</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-extrabold text-sm">฿</span>
+                      <input 
+                        type="text" 
+                        inputMode="decimal" 
+                        className={`${inputClasses} pl-9 text-[14px]`} 
+                        value={taxWithheldStr} 
+                        onChange={handleNumericChange(setTaxWithheldStr)}
+                        onFocus={() => handleFocus(taxWithheldStr, setTaxWithheldStr)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <p className="text-slate-400 text-[10px] mt-3 font-medium leading-relaxed italic max-w-2xl">
+                      {lang === 'en' 
+                        ? "Total amount of tax already deducted from your income or paid as prepayments to the Revenue Department."
+                        : "ยอดเงินภาษีที่ท่านได้ชำระไปแล้วในระหว่างปี (เช่น ภาษีหัก ณ ที่จ่ายจากเงินเดือน หรือยอดที่จ่ายล่วงหน้า)"}
+                    </p>
+                  </div>
                 </div>
              </div>
           </div>

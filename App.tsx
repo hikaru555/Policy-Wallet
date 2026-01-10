@@ -23,10 +23,6 @@ import { storageManager, STORAGE_KEYS } from './services/storageManager';
 // Initialize Versioned Storage
 storageManager.init();
 
-// Consultant Image Base64 (derived from the provided photo)
-const PATRICK_PHOTO = "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2574&auto=format&fit=crop"; // Using a high-quality professional placeholder that matches the provided aesthetic for code stability, but logic allows for any URL. 
-// For the specific user image provided, I will use the actual visual reference attributes.
-
 const ProfileRequiredView: React.FC<{ lang: Language, onUpdate: () => void, t: any }> = ({ lang, onUpdate, t }) => (
   <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200 text-center space-y-6">
     <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-5xl">👤</div>
@@ -67,6 +63,7 @@ const App: React.FC = () => {
   const [viewingPolicy, setViewingPolicy] = useState<Policy | null>(null);
   const [policyIdToDelete, setPolicyIdToDelete] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [autoRunAnalysis, setAutoRunAnalysis] = useState(false);
 
   // Persistence logic
   useEffect(() => {
@@ -146,6 +143,9 @@ const App: React.FC = () => {
     setIsAddingPolicy(false);
     setEditingPolicy(null);
     setIsMobileMenuOpen(false);
+    if (tab !== 'analysis') {
+      setAutoRunAnalysis(false);
+    }
   };
 
   if (!user) return <LoginView onLogin={handleLogin} lang={lang} />;
@@ -223,7 +223,7 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2"><PolicyList policies={policies} onDelete={id => setPolicyIdToDelete(id)} onEdit={handleEditPolicy} onViewDetails={setViewingPolicy} lang={lang} /></div>
                   <div className="space-y-6">
-                    {/* Compact Consultant Card with Actual Photo */}
+                    {/* Compact Consultant Card */}
                     <div className="bg-gradient-to-br from-indigo-950 to-slate-900 p-6 rounded-[2rem] shadow-2xl border border-white/10 relative overflow-hidden group">
                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none"></div>
                        <div className="relative z-10 flex flex-col items-center text-center">
@@ -264,7 +264,7 @@ const App: React.FC = () => {
                        </div>
                     </div>
 
-                    <ProtectionIndex score={protectionScore} onRunAnalysis={() => setActiveTab('analysis')} lang={lang} />
+                    <ProtectionIndex score={protectionScore} onRunAnalysis={() => { handleTabChange('analysis'); setAutoRunAnalysis(true); }} lang={lang} />
                   </div>
                 </div>
               </>
@@ -285,7 +285,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={setProtectionScore} isPro={isPro} /> : <ProfileRequiredView lang={lang} onUpdate={() => setActiveTab('profile')} t={t} />)}
+        {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={(score) => { setProtectionScore(score); setAutoRunAnalysis(false); }} isPro={isPro} autoRun={autoRunAnalysis} /> : <ProfileRequiredView lang={lang} onUpdate={() => setActiveTab('profile')} t={t} />)}
         {activeTab === 'tax' && (profile ? <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} /> : <ProfileRequiredView lang={lang} onUpdate={() => setActiveTab('profile')} t={t} />)}
         {activeTab === 'underwriting' && <PreUnderwritingView user={user} lang={lang} isPro={isPro} />}
         {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={setProfile} lang={lang} policies={policies} onImport={d => { setProfile(d.profile); setPolicies(d.policies); }} isPro={isPro} />}
