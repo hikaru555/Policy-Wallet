@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { translations, Language } from '../translations';
 import { Policy, PolicyDocument, User } from '../types';
@@ -76,10 +77,10 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-xl">
             <div className={`inline-flex items-center px-3 py-1 ${isPro ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'} rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 border`}>
-              <span className="mr-1">{isPro ? '✅' : '⭐'}</span> {isPro ? (lang === 'en' ? 'PRO VERSION ACTIVE' : 'สิทธิ์สมาชิก PRO ทำงานแล้ว') : t.proFeature}
+              <span className="mr-1">{isPro ? '✅' : '⭐'}</span> {isPro ? t.proVersionActive : t.proFeature}
             </div>
             <h3 className="text-3xl font-bold mb-3">{t.vaultTitle}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? (lang === 'en' ? 'Enjoy access to your local encrypted insurance document storage.' : 'จัดการเอกสารกรมธรรม์แบบเข้ารหัสในเครื่องของคุณได้อย่างอิสระ') : t.proDesc}</p>
+            <p className="text-slate-400 text-sm leading-relaxed">{isPro ? t.proVersionActiveDesc : t.proDesc}</p>
           </div>
         </div>
       </div>
@@ -120,7 +121,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                   <th className="px-6 py-3">{t.docCategory}</th>
                   <th className="px-6 py-3">{lang === 'en' ? 'File Name' : 'ชื่อไฟล์'}</th>
                   <th className="px-6 py-3">{t.companyPlan}</th>
-                  <th className="px-6 py-3">{lang === 'en' ? 'Storage Status' : 'สถานะการจัดเก็บ'}</th>
+                  <th className="px-6 py-3">{t.localStorage}</th>
                   <th className="px-6 py-3 text-right">{t.action}</th>
                 </tr>
               </thead>
@@ -150,7 +151,7 @@ const VaultView: React.FC<VaultViewProps> = ({ policies, onUpload, onDelete, lan
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-1.5">
                         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">{lang === 'en' ? 'Local Storage' : 'เก็บในเครื่องนี้'}</span>
+                        <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">{lang === 'en' ? 'Sync Active' : 'จัดเก็บถาวร'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">

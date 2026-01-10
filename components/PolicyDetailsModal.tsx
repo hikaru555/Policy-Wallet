@@ -73,7 +73,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({ policy, onClose
                 <div key={idx} className="flex justify-between items-start p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <div>
                     <p className="font-bold text-slate-800 text-sm">
-                      {c.type}
+                      {(t.coverageTypeLabels as any)[c.type] || c.type}
                     </p>
                     {c.roomRate && <p className="text-[10px] text-slate-500">{t.dailyRoomRate}: ฿{c.roomRate.toLocaleString()}</p>}
                   </div>

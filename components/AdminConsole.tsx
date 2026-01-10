@@ -15,12 +15,10 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Load users from the storage registry
   const [users, setUsers] = useState<User[]>(() => {
     return storageManager.load<User[]>(STORAGE_KEYS.USERS, []);
   });
   
-  // Refresh user list if registry changes in storage
   useEffect(() => {
     const handleStorageChange = () => {
       setUsers(storageManager.load<User[]>(STORAGE_KEYS.USERS, []));
@@ -56,21 +54,20 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
     storageManager.save(STORAGE_KEYS.USERS, updatedUsers);
     
     setNotification({
-      message: lang === 'en' ? `Role updated to ${newRole === 'Member' ? 'Normal User' : newRole === 'Pro-Member' ? 'Pro User' : newRole}` : `อัปเดตบทความเป็น ${newRole === 'Member' ? 'ผู้ใช้ทั่วไป' : newRole === 'Pro-Member' ? 'ผู้ใช้ระดับ Pro' : newRole} สำเร็จ`,
+      message: `${t.roleUpdatedTo}: ${newRole === 'Member' ? t.normalUser : newRole === 'Pro-Member' ? t.proUser : t.adminRole}`,
       type: 'success'
     });
 
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // STRICT ACCESS CONTROL: Only phattararak@gmail.com is allowed.
   if (currentUser.role !== 'Admin' || currentUser.email !== 'phattararak@gmail.com') {
     return (
       <div className="bg-rose-50 border border-rose-100 rounded-[2.5rem] p-12 text-center max-w-2xl mx-auto mt-10">
         <span className="text-6xl mb-6 block">🚫</span>
         <h3 className="text-2xl font-black text-rose-800 mb-2">{t.adminOnly}</h3>
         <p className="text-rose-600 font-medium opacity-80">
-          Unauthorized access detected. This console is restricted to the platform owner.
+          {lang === 'en' ? "Unauthorized access detected. This console is restricted to the platform owner." : "ตรวจพบการเข้าถึงโดยไม่ได้รับอนุญาต คอนโซลนี้จำกัดเฉพาะเจ้าของแพลตฟอร์มเท่านั้น"}
         </p>
       </div>
     );
@@ -78,7 +75,6 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      {/* Toast Notification */}
       {notification && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
           <div className={`px-6 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 backdrop-blur-md ${notification.type === 'success' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-rose-500/90 text-white border-rose-400'}`}>
@@ -88,7 +84,6 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
         </div>
       )}
 
-      {/* Admin Header Section */}
       <div className="bg-slate-900 rounded-[3rem] p-10 md:p-12 text-white relative overflow-hidden shadow-2xl border border-white/5">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] -ml-32 -mb-32"></div>
@@ -96,23 +91,21 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="space-y-4">
             <div>
-              <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-2">Command Center</h2>
-              <p className="text-slate-400 font-medium text-sm md:text-base max-w-lg">
-                Manage system access, oversee user permissions, and track global platform health.
-              </p>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-2">{t.commandCenter}</h2>
+              <p className="text-slate-400 font-medium text-sm md:text-base max-w-lg">{t.commandCenterDesc}</p>
             </div>
             
             <div className="flex flex-wrap gap-4 pt-4">
               <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-2xl">
-                <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Total Users</p>
+                <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">{t.totalUsers}</p>
                 <p className="text-xl font-black tabular-nums">{stats.total}</p>
               </div>
               <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-2xl">
-                <p className="text-[10px] font-black uppercase text-amber-400 tracking-widest mb-1">Pro Status</p>
+                <p className="text-[10px] font-black uppercase text-amber-400 tracking-widest mb-1">{t.proStatus}</p>
                 <p className="text-xl font-black tabular-nums">{stats.pro}</p>
               </div>
               <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-2xl">
-                <p className="text-[10px] font-black uppercase text-blue-400 tracking-widest mb-1">Admins</p>
+                <p className="text-[10px] font-black uppercase text-blue-400 tracking-widest mb-1">{t.admins}</p>
                 <p className="text-xl font-black tabular-nums">{stats.admin}</p>
               </div>
             </div>
@@ -128,17 +121,16 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
         </div>
       </div>
 
-      {/* User Management Table */}
       <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-xl font-black text-slate-800 tracking-tight">{t.manageUsers}</h3>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{filteredUsers.length} Results Found</p>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">{filteredUsers.length} {t.resultsFound}</p>
           </div>
           <div className="relative">
              <input 
                type="text" 
-               placeholder="Search by name or email..." 
+               placeholder={t.searchPlaceholder} 
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
                className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none w-full md:w-80 transition-all"
@@ -151,11 +143,11 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] border-b border-slate-100">
               <tr>
-                <th className="px-8 py-5">User Profile</th>
-                <th className="px-8 py-5">Email Address</th>
-                <th className="px-8 py-5">Stats & Activity</th>
-                <th className="px-8 py-5">Permissions</th>
-                <th className="px-8 py-5 text-right">Actions</th>
+                <th className="px-8 py-5">{t.userProfile}</th>
+                <th className="px-8 py-5">{t.userEmail}</th>
+                <th className="px-8 py-5">{t.statsActivity}</th>
+                <th className="px-8 py-5">{t.permissions}</th>
+                <th className="px-8 py-5 text-right">{t.action}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -164,7 +156,7 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
                   <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center opacity-30">
                       <span className="text-5xl mb-4">👥</span>
-                      <p className="text-xs font-black uppercase tracking-widest">No matching users found.</p>
+                      <p className="text-xs font-black uppercase tracking-widest">{t.noMatchingUsers}</p>
                     </div>
                   </td>
                 </tr>
@@ -190,13 +182,11 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
                     <td className="px-8 py-5">
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last Login:</span>
-                          <span className="text-[10px] font-bold text-slate-600">
-                            {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}
-                          </span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lastLoginLabel}</span>
+                          <span className="text-[10px] font-bold text-slate-600">{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sessions:</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.sessionsLabel}</span>
                           <span className="text-[10px] font-bold text-slate-600">{user.loginCount || 0}</span>
                         </div>
                       </div>
@@ -208,23 +198,23 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
                           user.role === 'Pro-Member' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
                           'bg-slate-100 text-slate-500 border-slate-200'
                         }`}>
-                          {user.role === 'Admin' ? 'Admin' : user.role === 'Pro-Member' ? 'Pro User' : 'Normal User'}
+                          {user.role === 'Admin' ? t.adminRole : user.role === 'Pro-Member' ? t.proUser : t.normalUser}
                         </span>
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end items-center gap-2">
                         {user.email === currentUser.email ? (
-                           <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic px-3 py-1.5 border border-dashed border-slate-100 rounded-xl">Protected Session</span>
+                           <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic px-3 py-1.5 border border-dashed border-slate-100 rounded-xl">{t.protectedSession}</span>
                         ) : (
                           <select 
                             value={user.role}
                             onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                             className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-all hover:border-indigo-300"
                           >
-                            <option value="Member">Normal User</option>
-                            <option value="Pro-Member">Pro User</option>
-                            <option value="Admin">Admin</option>
+                            <option value="Member">{t.normalUser}</option>
+                            <option value="Pro-Member">{t.proUser}</option>
+                            <option value="Admin">{t.adminRole}</option>
                           </select>
                         )}
                       </div>
@@ -236,11 +226,10 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ currentUser, lang }) => {
           </table>
         </div>
         
-        {/* Table Footer */}
         <div className="p-8 bg-slate-50/50 border-t border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>Registry is synced with local browser database</span>
+              <span>{t.registrySyncNotice}</span>
            </div>
            <div className="flex gap-2">
               <span className="w-2 h-2 rounded-full bg-indigo-500"></span>

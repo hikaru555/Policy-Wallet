@@ -16,6 +16,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   const t = translations[lang];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [showCompanyPicker, setShowCompanyPicker] = useState(false);
   
   const [basicInfo, setBasicInfo] = useState({
     company: INSURANCE_COMPANIES[0],
@@ -100,6 +101,10 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
   const handleAiScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Save the manually selected company to ensure it isn't overwritten by AI guess
+    const selectedCompany = basicInfo.company;
+    
     setIsScanning(true);
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -107,7 +112,7 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
       const extractedData = await parsePolicyDocument(base64, file.type);
       if (extractedData) {
         setBasicInfo({
-          company: extractedData.company || INSURANCE_COMPANIES[0],
+          company: selectedCompany, // STRICT: Keep user's chosen provider
           planName: extractedData.planName || '',
           policyNumber: extractedData.policyNumber || '',
           premiumAmount: formatWithCommas(extractedData.premiumAmount?.toString() || ''),
@@ -128,6 +133,15 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsDataURL(file);
+  };
+
+  const triggerScanWorkflow = () => {
+    setShowCompanyPicker(true);
+  };
+
+  const proceedToUpload = () => {
+    setShowCompanyPicker(false);
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -164,6 +178,43 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 animate-in slide-in-from-top-2 relative overflow-hidden">
+      
+      {/* Step 1: Company Selector Modal Overlay */}
+      {showCompanyPicker && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95">
+          <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mb-6 shadow-inner">🏢</div>
+          <h4 className="text-xl font-black text-slate-800 mb-2 leading-tight">{t.step1Provider}</h4>
+          <p className="text-sm text-slate-500 mb-8 max-w-xs font-medium">{t.step1ProviderDesc}</p>
+          
+          <div className="w-full max-w-sm space-y-6">
+            <select 
+              className={`${inputClasses} py-4 px-6 text-base font-bold shadow-xl border-slate-200`} 
+              value={basicInfo.company} 
+              onChange={(e) => setBasicInfo({ ...basicInfo, company: e.target.value })}
+            >
+              {INSURANCE_COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            
+            <div className="flex flex-col gap-3">
+              <button 
+                type="button"
+                onClick={proceedToUpload}
+                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-200 transition-all active:scale-95"
+              >
+                {t.startScan}
+              </button>
+              <button 
+                type="button"
+                onClick={() => setShowCompanyPicker(false)}
+                className="w-full py-3 text-slate-400 font-black text-[10px] uppercase tracking-widest"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isScanning && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center space-y-4">
           <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
@@ -174,8 +225,13 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <h4 className="font-bold text-lg">{initialPolicy ? t.edit : `+ ${t.addPolicy}`}</h4>
         {!initialPolicy && (
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all font-bold text-xs">
-            <span>✨ AI Auto-fill from Scan</span>
+          <button 
+            type="button" 
+            onClick={triggerScanWorkflow} 
+            className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all font-bold text-xs"
+          >
+            <span className="text-lg">✨</span>
+            <span>AI Auto-fill from Scan</span>
           </button>
         )}
         <input type="file" ref={fileInputRef} onChange={handleAiScan} className="hidden" accept="image/*,application/pdf" />
@@ -245,7 +301,11 @@ const PolicyForm: React.FC<PolicyFormProps> = ({ initialPolicy, onSubmit, onCanc
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{t.coverageType}</label>
                     <select className="w-full p-2 bg-white border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500 outline-none" value={c.type} onChange={(e) => updateCoverage(idx, 'type', e.target.value as CoverageType)}>
-                      {Object.values(CoverageType).map(v => <option key={v} value={v}>{v}</option>)}
+                      {Object.values(CoverageType).map(v => (
+                        <option key={v} value={v}>
+                          {(t.coverageTypeLabels as any)[v] || v}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>

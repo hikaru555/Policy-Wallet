@@ -44,10 +44,6 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
       return includedTypes.includes(c.type) ? cAcc + c.sumAssured : cAcc;
     }, 0), 0);
 
-  const totalHospitalBenefit = activeAndGracePolicies.reduce((acc, p) => 
-    acc + p.coverages.reduce((cAcc, c) => 
-      c.type === CoverageType.HOSPITAL_BENEFIT ? cAcc + c.sumAssured : cAcc, 0), 0);
-
   const totalRoomRate = activeAndGracePolicies.reduce((acc, p) => 
     acc + p.coverages.reduce((cAcc, c) => cAcc + (c.roomRate || 0), 0), 0);
 
@@ -68,6 +64,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
 
   const chartData = Array.from(coverageDataMap.entries()).map(([name, value]) => ({
     name: name,
+    displayName: (t.coverageTypeLabels as any)[name] || name,
     value,
     color: getCoverageColor(name)
   })).filter(d => d.value > 0);
@@ -122,8 +119,8 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
           <p className="text-base text-slate-400 mt-4 font-medium italic leading-relaxed">{t.totalSumAssuredNote}</p>
         </div>
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">{t.hospitalBenefit}</p>
-          <h3 className="text-4xl font-black text-pink-500 mt-2">฿{totalHospitalBenefit.toLocaleString()} <span className="text-lg font-medium text-slate-400">{t.perDay}</span></h3>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">{t.activePoliciesCount}</p>
+          <h3 className="text-4xl font-black text-pink-500 mt-2">{activeAndGracePolicies.length} <span className="text-lg font-medium text-slate-400">{t.policiesUnit}</span></h3>
         </div>
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">{t.dailyRoomRate}</p>
@@ -155,6 +152,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                       outerRadius="95%" 
                       paddingAngle={0} 
                       dataKey="value"
+                      nameKey="displayName"
                       animationBegin={0}
                       animationDuration={800}
                       stroke="none"
@@ -164,7 +162,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                       ))}
                     </Pie>
                     <Tooltip 
-                      formatter={(value: number) => [`฿${value.toLocaleString()}`, t.sumAssured]}
+                      formatter={(value: number, name: string) => [`฿${value.toLocaleString()}`, name]}
                       contentStyle={{ 
                         borderRadius: '20px', 
                         border: 'none', 
@@ -188,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
                         style={{ backgroundColor: entry.color }} 
                       />
                       <div className="flex flex-col min-w-0">
-                        <span className="text-base font-bold text-slate-700 truncate leading-tight mb-1">{entry.name}</span>
+                        <span className="text-base font-bold text-slate-700 truncate leading-tight mb-1">{entry.displayName}</span>
                         <div className="flex items-baseline gap-2">
                            <span className="text-sm font-black text-slate-900 tabular-nums">฿{entry.value.toLocaleString()}</span>
                            <span className="text-xs text-slate-400 font-bold">{percentage}%</span>

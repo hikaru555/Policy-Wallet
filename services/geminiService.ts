@@ -20,6 +20,12 @@ export const analyzeCoverageGaps = async (policies: Policy[], profile: UserProfi
     Client Profile: Age ${age}, Sex ${profile.sex}, Income ฿${profile.annualIncome.toLocaleString()}, Debt ฿${profile.totalDebt.toLocaleString()}.
     Current Insurance Portfolio: ${policySummary || "NONE"}.
     
+    CRITICAL EVALUATION CATEGORIES:
+    1. Life Protection (Sum Assured should cover at least 5-10x annual income or total debt).
+    2. Health Insurance (Evaluate room rate vs current Thai medical costs e.g. ฿8,000+).
+    3. Critical Illness (Should cover at least 2-3 years of income for recovery).
+    4. PENSION / RETIREMENT (CRITICAL): Check if the client has "Pension/Retirement" coverage. If the client is >35 years old and has no Pension policies, flag this as a HIGH priority gap. Retirement planning in Thailand requires private supplements beyond Social Security.
+    
     Output Language: ${lang === 'th' ? 'Thai' : 'English'}
     Return JSON: score (0-100), gaps (category, description, priority), recommendations (string array).
   `;
@@ -83,17 +89,16 @@ export const analyzeTaxOptimization = async (policies: Policy[], profile: UserPr
     - Personal Deduction: ฿60,000
     - Expense Deduction: 50% max ฿100,000
     - Life & Health: ฿100,000 (Health insurance cap ฿25,000 within this)
-    - Pension: ฿200,000 (max 15% income)
-    - Parent Health Insurance: ฿15,000 (for both parents combined)
+    - Pension Insurance: ฿200,000 (max 15% income) - This is a powerful tool.
     - Combined Group Limit (SSF + RMF + PVD + PensionInsurance): ฿500,000
     - ThaiESG Separate Limit: ฿300,000 (max 30% income) - This is separate from the ฿500,000 group.
     
     IMPORTANT BRAND RULE: 
     When suggesting insurance products to optimize tax, ONLY recommend FWD Thailand products sold via the AGENT channel.
     Examples of products to recommend:
+    - Pension: FWD For Pension 85/1, 85/5, 85/7
     - Health: FWD Precious Care, FWD CI Pro, FWD CI Fixed Pay
     - Life: FWD Power Life, FWD Precious Whole Life
-    - Pension: FWD For Pension 85/1, 85/5
     - Savings: FWD Power Save 12/6, FWD Power Save 15/5
     Do NOT suggest products from other companies.
 
