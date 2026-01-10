@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,24 +8,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       :root {
-        /* Using the native system font stack for maximum performance and a native OS feel */
-        --font-main: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        /* Prioritizing Sukhumvit Set (Apple) and IBM Plex Sans Thai (Universal) for a high-end look */
+        --font-main: "Sukhumvit Set", "IBM Plex Sans Thai", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
       }
       body { 
         font-family: var(--font-main);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
-        /* Standard line height 1.6 - 1.7 is ideal for Thai tone marks across different system fonts */
-        line-height: 1.65;
+        /* Line height 1.7 is optimal for IBM Plex Sans Thai to prevent clipping of tone marks */
+        line-height: 1.7;
         font-size: 16px;
       }
       
-      /* Thai-specific character spacing adjustment for visual equality with English */
+      /* Thai-specific refinement for modern loopless fonts */
       [lang="th"] {
-        letter-spacing: 0.01em;
+        letter-spacing: -0.01em;
       }
 
       /* Scale up utility text for better accessibility */

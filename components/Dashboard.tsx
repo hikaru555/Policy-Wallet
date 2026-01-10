@@ -217,12 +217,12 @@ const Dashboard: React.FC<DashboardProps> = ({ policies, onViewDetails, lang }) 
             </button>
           </div>
           <div className="space-y-6 flex-1">
-            {policies.length === 0 ? (
+            {activeAndGracePolicies.length === 0 ? (
               <div className="text-center py-32 text-slate-400 italic text-lg border-2 border-dashed border-slate-100 rounded-[2.5rem]">
                 {t.noRenewalsTrack}
               </div>
             ) : (
-              policies
+              activeAndGracePolicies
                 .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
                 .slice(0, 5)
                 .map(p => {

@@ -19,7 +19,6 @@ import ProtectionIndex from './components/ProtectionIndex';
 import PreUnderwritingView from './components/PreUnderwritingView';
 import PremiumTimeline from './components/PremiumTimeline';
 import AppLogo from './components/AppLogo';
-import Confetti from './components/Confetti';
 import { CardSkeleton, TableSkeleton } from './components/Skeleton';
 import { storageManager, STORAGE_KEYS } from './services/storageManager';
 
@@ -50,7 +49,6 @@ const App: React.FC = () => {
 
   // Global UI States
   const [isAppLoading, setIsAppLoading] = useState(true);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
@@ -76,11 +74,6 @@ const App: React.FC = () => {
   useEffect(() => { storageManager.save(STORAGE_KEYS.POLICIES, policies); }, [policies]);
   useEffect(() => { if (profile) storageManager.save(STORAGE_KEYS.PROFILE, profile); }, [profile]);
   useEffect(() => { if (protectionScore !== null) storageManager.save(STORAGE_KEYS.SCORE, protectionScore); }, [protectionScore]);
-
-  const triggerSuccess = () => {
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 5000);
-  };
 
   const handleLogin = (newUser: User) => {
     const allUsers = storageManager.load<User[]>(STORAGE_KEYS.USERS, []);
@@ -112,7 +105,6 @@ const App: React.FC = () => {
     setPolicies(prev => editingPolicy ? prev.map(p => p.id === policy.id ? policy : p) : [policy, ...prev]);
     setIsAddingPolicy(false);
     setEditingPolicy(null);
-    triggerSuccess();
   };
 
   const handleEditPolicy = (policy: Policy) => {
@@ -123,7 +115,6 @@ const App: React.FC = () => {
 
   const handleUploadDocument = (policyId: string, doc: PolicyDocument) => {
     setPolicies(prev => prev.map(p => p.id === policyId ? { ...p, documents: [...(p.documents || []), doc] } : p));
-    triggerSuccess();
   };
 
   const handleTabChange = (tab: any) => {
@@ -148,8 +139,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden relative">
-      <Confetti active={showConfetti} />
-      
       {/* Mobile Backdrop Overlay */}
       {isMobileMenuOpen && (
         <div 
@@ -249,7 +238,7 @@ const App: React.FC = () => {
               {(activeTab === 'overview' || activeTab === 'policies') && (
                 <button 
                   onClick={() => { setActiveTab('policies'); setIsAddingPolicy(!isAddingPolicy); setEditingPolicy(null); }} 
-                  className={`px-10 py-5 rounded-[2rem] text-[14px] font-black uppercase tracking-[0.15em] transition-all active:scale-95 flex items-center gap-3 shadow-[0_20px_50px_-12px_rgba(79,70,229,0.3)] hover:shadow-[0_20px_50px_-10px_rgba(79,70,229,0.5)] hover:-translate-y-1 ${
+                  className={`px-6 py-5 rounded-[2rem] text-[13px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2.5 shadow-[0_20px_50px_-12px_rgba(79,70,229,0.3)] hover:shadow-[0_20px_50px_-10px_rgba(79,70,229,0.5)] hover:-translate-y-1 ${
                     (isAddingPolicy || editingPolicy) 
                       ? 'bg-slate-100 text-slate-500 hover:bg-slate-200 shadow-slate-200/50 border border-slate-200' 
                       : 'bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 text-white border border-white/10'
@@ -262,7 +251,7 @@ const App: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <span className="text-2xl font-normal leading-none">+</span>
+                      <span className="text-xl font-medium leading-none">+</span>
                       <span>{t.addPolicy}</span>
                     </>
                   )}
@@ -347,10 +336,10 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={(score) => { setProtectionScore(score); setAutoRunAnalysis(false); triggerSuccess(); }} isPro={isPro} autoRun={autoRunAnalysis} /> : <ProfileRequiredView lang={lang} onUpdate={() => setActiveTab('profile')} t={t} />)}
+              {activeTab === 'analysis' && (profile ? <GapAnalysisView policies={policies} profile={profile} lang={lang} onAnalysisComplete={(score) => { setProtectionScore(score); setAutoRunAnalysis(false); }} isPro={isPro} autoRun={autoRunAnalysis} /> : <ProfileRequiredView lang={lang} onUpdate={() => setActiveTab('profile')} t={t} />)}
               {activeTab === 'tax' && (profile ? <TaxOptimizationView policies={policies} profile={profile} lang={lang} isPro={isPro} /> : <ProfileRequiredView lang={lang} onUpdate={() => setActiveTab('profile')} t={t} />)}
               {activeTab === 'underwriting' && <PreUnderwritingView user={user} lang={lang} isPro={isPro} />}
-              {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={(p) => { setProfile(p); triggerSuccess(); }} lang={lang} policies={policies} onImport={d => { setProfile(d.profile); setPolicies(d.policies); triggerSuccess(); }} isPro={isPro} />}
+              {activeTab === 'profile' && <ProfileForm initialProfile={profile || { name: user.name, sex: 'Male', birthDate: '1990-01-01', maritalStatus: 'Single', dependents: 0, annualIncome: 0, monthlyExpenses: 0, totalDebt: 0 }} onSave={(p) => { setProfile(p); }} lang={lang} policies={policies} onImport={d => { setProfile(d.profile); setPolicies(d.policies); }} isPro={isPro} />}
               {activeTab === 'vault' && <VaultView policies={policies} onUpload={handleUploadDocument} onDelete={(p, d) => setPolicies(prev => prev.map(pol => pol.id === p ? { ...pol, documents: (pol.documents || []).filter(doc => doc.id !== d) } : pol))} lang={lang} isPro={isPro} user={user} />}
               {activeTab === 'admin' && <AdminConsole currentUser={user} lang={lang} />}
             </>

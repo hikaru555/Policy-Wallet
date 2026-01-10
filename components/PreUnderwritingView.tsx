@@ -174,15 +174,20 @@ const PreUnderwritingView: React.FC<PreUnderwritingViewProps> = ({ user, lang, i
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <div className="p-6 bg-indigo-50/50 border border-indigo-100 rounded-[2rem] space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center text-sm">💡</span>
-                <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">{t.medicalHistoryGuidelineTitle}</h4>
+            <div className="p-6 bg-indigo-50/50 border border-indigo-100 rounded-[2rem] space-y-5">
+              <div className="flex items-center gap-3.5 mb-2">
+                <span className="w-9 h-9 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm shadow-sm">💡</span>
+                <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.15em] leading-tight">{t.medicalHistoryGuidelineTitle}</h4>
               </div>
-              <ul className="space-y-4">
-                <li className="flex gap-3 items-start"><span className="text-indigo-400 mt-1">✨</span><p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline1}</p></li>
-                <li className="flex gap-3 items-start"><span className="text-indigo-400 mt-1">✨</span><p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline2}</p></li>
-                <li className="flex gap-3 items-start"><span className="text-indigo-400 mt-1">✨</span><p className="text-[11px] font-semibold text-slate-600 leading-relaxed">{t.medicalHistoryGuideline3}</p></li>
+              <ul className="space-y-5">
+                {[t.medicalHistoryGuideline1, t.medicalHistoryGuideline2, t.medicalHistoryGuideline3].map((guideline, idx) => (
+                  <li key={idx} className="flex gap-4 items-start">
+                    <span className="text-indigo-400 shrink-0 text-sm leading-none mt-0.5">✨</span>
+                    <p className="text-[11px] font-semibold text-slate-600 leading-relaxed">
+                      {guideline}
+                    </p>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
